@@ -1,0 +1,18 @@
+{
+	"name": "pandora3/time",
+	"description": "Pandora 3: Time",
+	"homepage": "https://github.com/PandoraTeam/pandora3-Time",
+	"authors": [
+		{
+			"name": "Petr Gostin",
+			"email": "nescafe238@gmail.com",
+			"homepage": "http://u-238.ru",
+			"role": "Developer"
+		}
+	],
+	"autoload": {
+		"psr-4": {
+			"Pandora3\\Time\\": "/"
+		}
+	}
+}
