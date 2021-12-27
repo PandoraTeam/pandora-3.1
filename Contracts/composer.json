@@ -1,0 +1,19 @@
+{
+	"name": "pandora3/contracts",
+	"description": "Pandora 3: Contracts",
+	"keywords": ["pandora", "contracts"],
+	"homepage": "https://github.com/PandoraTeam/pandora3-Contracts",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Petr Gostin",
+			"email": "nescafe238@gmail.com",
+			"homepage": "http://u-238.ru"
+		}
+	],
+	"autoload": {
+		"psr-4": {
+			"Pandora3\\Contracts\\": "/"
+		}
+	}
+}
