@@ -1,0 +1,19 @@
+{
+	"name": "nescafe62/pandora-3.1",
+	"description": "Pandora 3.1 mono-repository",
+	"keywords": ["pandora"],
+	"homepage": "https://github.com/NesCafe62/pandora-3.1",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Petr Gostin",
+			"email": "nescafe238@gmail.com",
+			"homepage": "http://u-238.ru"
+		}
+	],
+	"autoload": {
+		"psr-4": {
+			"Pandora3\\": "/"
+		}
+	}
+}
