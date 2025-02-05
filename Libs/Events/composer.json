@@ -1,0 +1,20 @@
+{
+	"name": "pandora3/events",
+	"description": "Pandora 3: Events",
+	"homepage": "https://github.com/PandoraTeam/pandora3-Events",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Petr Gostin",
+			"email": "nescafe238@gmail.com",
+			"homepage": "http://u-238.ru"
+		}
+	],
+	"require": {
+	},
+	"autoload": {
+		"psr-4": {
+			"Pandora3\\Events\\": "/"
+		}
+	}
+}

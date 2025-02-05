@@ -6,6 +6,7 @@ use Pandora3\Contracts\RequestInterface;
 use Pandora3\Contracts\ValidationExceptionInterface;
 use Pandora3\Contracts\ValidatorInterface;
 use Pandora3\Form\Exceptions\ValidationFormException;
+use Pandora3\Form\Fields\FormField;
 
 /**
  * Class ValidationForm
@@ -17,16 +18,24 @@ abstract class ValidationForm extends Form {
 	protected $validator;
 
 	/** @var array */
-	protected $messages;
+	protected $messages = [];
 
 	/**
 	 * @param ContainerInterface $container
 	 * @param RequestInterface $request
+	 * @param \Closure $getSecret
 	 * @param array $values
 	 */
-	public function __construct(ContainerInterface $container, RequestInterface $request, $values = []) {
-		parent::__construct($container, $request, $values);
-		$this->messages = $request->getAttribute('validationMessages') ?? []; // todo: probably use flashMessages
+	public function __construct(ContainerInterface $container, RequestInterface $request, \Closure $getSecret, $values = []) {
+		parent::__construct($container, $request, $getSecret, $values);
+		$messages = $request->getAttribute('validationMessages') ?? [];
+		if ($messages) {
+			$formName = $request->getAttribute('validationForm') ?? null;
+			// when formName is null load validation messages for any form
+			if (is_null($formName) || $formName === static::class) {
+				$this->messages = $messages; // todo: probably use flashMessages
+			}
+		}
 	}
 
 	/**
@@ -56,18 +65,42 @@ abstract class ValidationForm extends Form {
 			'messages' => $this->ruleMessages(),
 		]);
 	}
+	
+	/**
+	 * @return array
+	 */
+	protected function getFieldLabels(): array {
+		$labels = [];
+		foreach ($this->fieldParams as $fieldName => $fieldParams) {
+			$label = $fieldParams['label'] ?? null;
+			if ($label) {
+				$labels[$fieldName] = $label;
+			}
+		}
+		return $labels;
+	}
 
 	/**
 	 * Validate field values
 	 */
 	public function validate(): void {
 		if ($this->method === 'post' && !$this->request->isPost()) {
-			throw new ValidationFormException("Request method is not post");
+			throw new \LogicException("Request method is not post");
 		}
+		$this->validateToken();
 		$this->validator = $this->createValidator();
-		$this->validator->validate($this->getValues());
+		$this->validator->setFieldLabels($this->getFieldLabels());
+		$isValid = true;
+		try {
+			$this->validator->validate($this->getValues());
+		} catch (ValidationExceptionInterface $ex) {
+			$isValid = false;
+		}
 		$this->messages = $this->validator->getMessages();
 		$this->afterValidate();
+		if (!$isValid) {
+			throw new ValidationFormException($this->messages, static::class);
+		}
 	}
 
 	/**
@@ -95,12 +128,27 @@ abstract class ValidationForm extends Form {
 	 * @return string
 	 */
 	public function getFieldMessage(string $fieldName): string {
-		if (!$this->validator) {
-			return '';
-		}
-		return $this->validator->getFieldMessage($fieldName);
+		return $this->messages[$fieldName] ?? '';
 	}
-
+	
+	/**
+	 * @param string $fieldName
+	 * @return bool
+	 */
+	public function isFieldValid(string $fieldName): bool {
+		return !isset($this->messages[$fieldName]);
+	}
+	
+	/**
+	 * @param string $fieldName
+	 * @param array $params
+	 * @return FormField
+	 */
+	protected function createField(string $fieldName, array $params): FormField {
+		$params['isValid'] = $this->isFieldValid($fieldName);
+		return parent::createField($fieldName, $params);
+	}
+	
 	/**
 	 * @return string
 	 */

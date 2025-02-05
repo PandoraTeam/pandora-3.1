@@ -14,7 +14,7 @@ class UploadedFile implements UploadedFileInterface {
 	protected $path;
 
 	/** @var string */
-	protected $name;
+	protected $uploadName;
 
 	/** @var string|null */
 	protected $mediaType;
@@ -28,18 +28,18 @@ class UploadedFile implements UploadedFileInterface {
 	/**
 	 * UploadedFile constructor
 	 * @param string $path
-	 * @param string $name
-	 * @param null|string $mediaType
+	 * @param string $uploadName
+	 * @param string|null $mediaType
 	 * @param int|null $size
 	 * @param int|null $error
 	 */
 	public function __construct(
-		string $path, string $name,
+		string $path, string $uploadName,
 		?string $mediaType = null, ?int $size = null,
 		?int $error = UPLOAD_ERR_OK
 	) {
 		$this->path = $path;
-		$this->name = $name;
+		$this->uploadName = $uploadName;
 		$this->mediaType = $mediaType;
 		$this->size = $size;
 		$this->error = $error;
@@ -47,10 +47,10 @@ class UploadedFile implements UploadedFileInterface {
 
 	/**
 	 * @param string $directory
-	 * @param null|string $name
+	 * @param string|null $name
 	 * @return File
 	 */
-	function move(string $directory, ?string $name = null): FileInterface {
+	public function move(string $directory, ?string $name = null): FileInterface {
 		if (!is_uploaded_file($this->path)) {
 			throw new \RuntimeException("File is not a valid uploaded file '{$this->path}'");
 		}
@@ -61,7 +61,7 @@ class UploadedFile implements UploadedFileInterface {
 		$targetPath = $directory . '/' . $name;
 		FileUtils::createPath($directory);
 		if (!move_uploaded_file($this->path, $targetPath)) {
-			throw new \RuntimeException("Failed to move file to '$targetPath' ");
+			throw new \RuntimeException("Failed to move file to '$targetPath'");
 		}
 
 		return new File($targetPath);
@@ -75,53 +75,64 @@ class UploadedFile implements UploadedFileInterface {
 	}
 
 	/**
+	 * Get temporary file name
 	 * @return string
 	 */
-	public function getUploadName(): string {
-		return $this->name;
+	public function getName(): string {
+		return FileUtils::getFileName($this->path);
+		// $extension = FileUtils::getFileExtension($this->path);
+		// return FileUtils::getFileName($this->path).($extension ? '.'.$extension : '');
+	}
+	
+	/**
+	 * Get temporary file name without extension (same as getName)
+	 * @return string
+	 */
+	public function getNameWithoutExtension(): string {
+		return FileUtils::getFileName($this->path);
 	}
 
 	/**
-	 * @return null|string
+	 * {@inheritdoc}
 	 */
 	public function getMediaType(): ?string {
 		return $this->mediaType;
 	}
 
 	/**
-	 * @return int|null
+	 * {@inheritdoc}
 	 */
 	public function getSize(): ?int {
 		return $this->size;
 	}
 
 	/**
-	 * @return int|null
+	 * {@inheritdoc}
 	 */
 	public function getError(): ?int {
 		return $this->error;
 	}
 
 	/**
-	 * @return string
+	 * {@inheritdoc}
 	 */
-	public function getName(): string {
-		$extension = FileUtils::getFileExtension($this->path);
-		return FileUtils::getFileName($this->path).($extension ? '.'.$extension : '');
+	public function getUploadName(): string {
+		return $this->uploadName;
 	}
 
 	/**
-	 * @return string
+	 * {@inheritdoc}
 	 */
-	public function getNameWithoutExtension(): string {
-		return FileUtils::getFileName($this->name);
+	public function getUploadNameWithoutExtension(): string {
+		return FileUtils::getFileName($this->uploadName);
 	}
 
 	/**
-	 * @return string
+	 * Get uploaded file extension
+	 * {@inheritdoc}
 	 */
 	public function getExtension(): string {
-		return FileUtils::getFileExtension($this->name);
+		return FileUtils::getFileExtension($this->uploadName);
 	}
 
 }

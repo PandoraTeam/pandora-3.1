@@ -24,17 +24,22 @@ class ApplicationExceptionMiddleware implements MiddlewareInterface {
 	
 	/** @var string */
 	protected $environment;
+	
+	/** @var string */
+	protected $baseUri;
 
 	/**
 	 * ApplicationExceptionMiddleware constructor
 	 * @param RedirectorInterface $redirector
 	 * @param FlashMessages $messages
 	 * @param string $environment
+	 * @param string $baseUri
 	 */
-	public function __construct(RedirectorInterface $redirector, FlashMessages $messages, string $environment) {
+	public function __construct(RedirectorInterface $redirector, FlashMessages $messages, string $environment, string $baseUri) {
 		$this->redirector = $redirector;
 		$this->messages = $messages;
 		$this->environment = $environment;
+		$this->baseUri = $baseUri;
 	}
 
 	/**
@@ -42,18 +47,21 @@ class ApplicationExceptionMiddleware implements MiddlewareInterface {
 	 * @return string|null
 	 */
 	protected function getReferer(RequestInterface $request): ?string {
+		// todo: duplicate with app/App.php
+		// todo: possibly only allow get request
 		$server = $request->server();
 		$uriReferer = $server['HTTP_REFERER'] ?? null;
 		$serverName = $server['SERVER_NAME'] ?? null;
 		if (!$serverName) {
-			// todo: log warning "Server name is missing"
+			trigger_error('Server name is missing', E_USER_WARNING);
 			return null;
 		}
 		$host = parse_url($uriReferer, PHP_URL_HOST);
-		if ($host !== $serverName) {
-			return null;
-		}
-		if (!preg_match('#^(?:http:|https:|)?//[^/]+(.*)$#', $uriReferer, $matches)) {
+		if (
+			$host !== $serverName ||
+			// !preg_match('#^(?:http:|https:|)//[^/]+([^?]*)#', $uriReferer, $matches)
+			!preg_match('#^(?:http:|https:|)//[^/]+(.*)#', $uriReferer, $matches)
+		) {
 			return null;
 		}
 		return $matches[1];
@@ -66,17 +74,25 @@ class ApplicationExceptionMiddleware implements MiddlewareInterface {
 		try {
 			return $next($request, ...$arguments);
 		} catch (ApplicationExceptionInterface $ex) {
-			// throw all ApplicationExceptionInterface except ApplicationLogicExceptionInterface in dev and test modes
+			// ApplicationLogicExceptionInterface always redirect with error flash message
+			// ApplicationExceptionInterface:
+			// 		DEV & TEST: throw exception (dump to browser)
+			// 		PRODUCTION: redirect with error flash message
+			
 			if ($this->environment !== BaseApplication::ENV_PRODUCTION && !($ex instanceof ApplicationLogicExceptionInterface)) {
 				throw $ex;
 			}
 			$this->messages->add(FlashMessages::Error, $ex->getMessage());
-			$uriReferer = $this->getReferer($request);
-			if (!$uriReferer) {
-				// todo: log warning "Could not redirect, http referer is missing"
-				throw $ex;
+			$redirectUri = $this->getReferer($request) ?? null;
+			if (is_null($redirectUri) || ($redirectUri === $request->getUri() && !$request->isPost())) {
+				$redirectUri = $this->baseUri;
 			}
-			return $this->redirector->redirectUri($uriReferer);
+			/* if (!$uriReferer) {
+				// to do: log warning "Could not redirect, http referer is missing"
+				echo "Could not redirect, http referer is missing<br>";
+				throw $ex;
+			} */
+			return $this->redirector->redirectUri($redirectUri);
 		}
 	}
 	

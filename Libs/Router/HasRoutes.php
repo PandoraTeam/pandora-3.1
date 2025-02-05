@@ -119,6 +119,40 @@ trait HasRoutes {
 	
 	/**
 	 * @param string $path
+	 * @param array $options
+	 */
+	public function resource(string $path, array $options): void {
+		$pluralName = $options['plural'] ?? null;
+		$singleName = $options['single'] ?? null;
+		if (!$pluralName && !$singleName && count($options) === 2) {
+			[$pluralName, $singleName] = $options;
+		}
+		$routeName = $options['routeName'] ?? $pluralName;
+		
+		if (is_null($pluralName)) {
+			throw new \RuntimeException("Resource route option 'plural' is required");
+		}
+		/* if (is_null($singleName)) {
+			throw new \RuntimeException("Resource route option 'single' is required");
+		} */
+
+		$this->get($path, $pluralName, $routeName . '.' . $pluralName);
+		
+		if (!is_null($singleName)) {
+			$this->get($path . '/{id}', $singleName, $routeName . '.' . $singleName);
+		}
+		
+		$this->get($path . '/create', 'createForm', $routeName . '.createForm');
+		$this->post($path . '/create', 'create', $routeName . '.create');
+		
+		$this->get($path . '/{id}/update', 'updateForm', $routeName . '.updateForm');
+		$this->post($path . '/{id}/update', 'update', $routeName . '.update');
+		
+		$this->post($path . '/{id}/delete', 'delete', $routeName . '.delete');
+	}
+	
+	/**
+	 * @param string $path
 	 * @param int $methodFlags
 	 * @param $handler
 	 * @param string $name

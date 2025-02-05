@@ -8,18 +8,20 @@ namespace Pandora3\File;
 class FileUtils {
 
 	/**
+	 * Create directory path recursively
 	 * @param string $path
 	 */
 	public static function createPath(string $path): void {
 		if (is_dir($path)) {
 			return;
 		}
-		if (!mkdir($path, 0755, true)) {
+		if (!mkdir($path, 0755, true) && !is_dir($path)) {
 			throw new \RuntimeException("Failed to create path '$path'");
 		}
 	}
 
 	/**
+	 * Get file extension
 	 * @param string $filename
 	 * @return string
 	 */
@@ -30,6 +32,7 @@ class FileUtils {
 	}
 
 	/**
+	 * Get file name without extension
 	 * @param string $filename
 	 * @return string
 	 */
@@ -38,6 +41,7 @@ class FileUtils {
 	}
 	
 	/**
+	 * Get file size
 	 * @param string $filename
 	 * @return int|null
 	 */

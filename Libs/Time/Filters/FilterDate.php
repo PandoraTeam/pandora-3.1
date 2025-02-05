@@ -1,10 +1,11 @@
 <?php
 namespace Pandora3\Time\Filters;
+
 use Pandora3\Time\Date;
 
 /**
  * Class FilterDate
- * @package Pandora3\Sanitizer\Filters
+ * @package Pandora3\Time\Filters
  */
 class FilterDate {
 
@@ -28,7 +29,10 @@ class FilterDate {
 	 */
 	public function apply($value) {
 		if (!$value) {
-			return $value;
+			return null;
+		}
+		if ($value instanceof \DateTimeInterface) {
+			return new Date($value);
 		}
 		return Date::createFromFormat($this->format, $value) ?? $value;
 	}

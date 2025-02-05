@@ -16,18 +16,25 @@ class RouteGroup {
 	protected $middlewares;
 
 	/** @var string */
-	protected $uriPrefix;
-	
+	protected $baseUriPrefix;
+
 	/**
 	 * RouteGroup constructor
 	 * @param array $params
+	 * @param string $baseUri
 	 */
-	public function __construct(array $params) {
+	public function __construct(array $params, string $baseUri) {
 		$this->controller = $params['controller'] ?? '';
 		$this->middlewares = $params['middlewares'] ?? [];
 		$uriPrefix = $params['prefix'] ?? '';
-		$this->uriPrefix = $uriPrefix
-			? preg_replace('#^/?#', '/', $uriPrefix) : '';
+
+		$baseUriPrefix = ($baseUri === '/') ? '' : $baseUri;
+		if ($uriPrefix) {
+			// add leading slash to uriPrefix
+			$uriPrefix = $baseUriPrefix . preg_replace('#^/?#', '/', $uriPrefix);
+			$baseUriPrefix = preg_replace('#/$#', '', $uriPrefix); // remove trailing slash
+		}
+		$this->baseUriPrefix = $baseUriPrefix;
 	}
 	
 	/**
@@ -41,7 +48,12 @@ class RouteGroup {
 	 * {@inheritdoc}
 	 */
 	protected function createRoute(string $path, int $methodFlags, $handler, $name = ''): Route {
-		$path = $this->uriPrefix . preg_replace('#^/?#', '/', $path);
+		/* // add leading slash to path
+		$path = $this->uriPrefix . preg_replace('#^/?#', '/', $path); */
+		
+		// path should always start with slash
+		// remove trailing slash, but keep it if path equal '/'
+		$path = preg_replace('#(.+)/$#', '$1', $this->baseUriPrefix . $path);
 		$pattern = Router::generatePattern($path);
 		if ($this->controller && is_string($handler)) {
 			$handler = [$this->controller, $handler];

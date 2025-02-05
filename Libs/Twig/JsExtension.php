@@ -15,7 +15,7 @@ class JsExtension extends AbstractExtension {
 	 */
 	public function getFilters() {
 		return [
-			new TwigFilter('js', function($value) {
+			new TwigFilter('js', static function($value) {
 				/* if (is_array($value) && empty($value)) {
 					return '{}';
 				} */

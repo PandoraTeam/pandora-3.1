@@ -1,0 +1,33 @@
+{
+	"name": "pandora3/libs",
+	"description": "Pandora 3: Libs",
+	"keywords": ["pandora", "libs"],
+	"homepage": "https://github.com/PandoraTeam/pandora3-Libs",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Petr Gostin",
+			"email": "nescafe238@gmail.com",
+			"homepage": "http://u-238.ru"
+		}
+	],
+	"require": {
+		"php": "^7.2",
+
+		"pandora3/contracts": "^1.0",
+
+		"pandora3/application": "^1.0",
+		"pandora3/authentication": "^1.0",
+		"pandora3/cli": "^1.0",
+		"pandora3/container": "^1.0",
+		"pandora3/controller": "^1.0",
+		"pandora3/cookie": "^1.0",
+		"pandora3/env-parser": "^1.0",
+		"pandora3/file": "^1.0",
+		"pandora3/http": "^1.0",
+		"pandora3/router": "^1.0",
+		"pandora3/session": "^1.0",
+		"pandora3/logger": "^1.0",
+		"pandora3/registry": "^1.0"
+    }
+}

@@ -14,7 +14,7 @@ class FieldCalendar extends FormField {
 	 */
 	protected function getValue() {
 		if ($this->value instanceof \DateTimeInterface) {
-			$format = $this->params['format'] ?? 'd.m.Y';
+			$format = $this->params['format'] ?? 'Y-m-d';
 			return $this->value->format($format);
 		}
 		return (string) $this->value;

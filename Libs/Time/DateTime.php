@@ -7,6 +7,7 @@ use DateTimeInterface;
 
 /**
  * Class DateTime
+ * Immutable date and time representation
  * @package Pandora3\Time
  *
  * @property-read int $year
@@ -16,7 +17,9 @@ use DateTimeInterface;
  * @property-read int $hour
  * @property-read int $minute
  * @property-read int $second
+ * @property-read int $microseconds
  * @property-read Date $date
+ * @property-read Time $time
  */
 class DateTime extends \DateTimeImmutable {
 
@@ -44,18 +47,28 @@ class DateTime extends \DateTimeImmutable {
 	}
 
 	/**
-	 * @param string|int $year
-	 * @param string|int $month
-	 * @param string|int $day
-	 * @param string|int $hour
-	 * @param string|int $minute
-	 * @param string|int $second
+	 * @param int $year
+	 * @param int $month
+	 * @param int $day
+	 * @param int $hour
+	 * @param int $minute
+	 * @param int $second
 	 * @return static
 	 */
-	public static function create($year, $month, $day, $hour = 0, $minute = 0, $second = 0): self {
+	public static function create(int $year, int $month, int $day, int $hour = 0, int $minute = 0, int $second = 0): self {
 		return (new static())
-			->setDate((int) $year, (int) $month, (int) $day)
-			->setTime((int) $hour, (int) $minute, (int) $second);
+			->setDate($year, $month, $day)
+			->setTime($hour, $minute, $second);
+	}
+	
+	/**
+	 * @param int $timestamp
+	 * @param string|DateTimeZone|null $timezone
+	 * @return static
+	 */
+	public static function createFromTimestamp(int $timestamp, DateTimeZone $timezone = null): self {
+		$date = new static($timestamp);
+		return new static($date, $timezone); // todo: не тестировалось
 	}
 
 	/**
@@ -68,13 +81,13 @@ class DateTime extends \DateTimeImmutable {
 		$date = $time ? parent::createFromFormat($format, $time) : null; // todo: think
 		return $date ? new static($date, $timezone) : null;
 	}
-
+	
 	/**
 	 * @param string $format
 	 * @return string
 	 */
 	public function format($format) {
-		$format = self::translate($format, $this->locale);
+		$format = $this->translate($format, $this->locale);
 		return parent::format($format);
 	}
 
@@ -173,6 +186,14 @@ class DateTime extends \DateTimeImmutable {
 	protected function getSecond(): int {
 		return (int) $this->format('s');
 	}
+	
+	/**
+	 * @internal
+	 * @return int
+	 */
+	protected function getMicroseconds(): int {
+		return (int) $this->format('u');
+	}
 
 	/**
 	 * @param string $interval
@@ -196,11 +217,21 @@ class DateTime extends \DateTimeImmutable {
 	public function getDate(): Date {
 		return new Date($this);
 	}
-
-    // todo: implement (and add @property-read Time $time)
-	/* public function getTime(): Time {
-		return new Time();
-	} */
+	
+	/**
+	 * @return Time
+	 */
+	public function getTime(): Time {
+		return Time::createFromDateTime($this);
+	}
+	
+	/**
+	 * @param Time $time
+	 * @return static
+	 */
+	public function setTimeFrom(Time $time): self {
+		return $this->setTime($time->hour, $time->minute, $time->second, $time->microseconds);
+	}
 
 	/**
 	 * @param string|DateTimeInterface|null $date

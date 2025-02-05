@@ -38,10 +38,19 @@ class EloquentConnection {
 		], $params);
 		
 		$this->manager = $manager;
-		$this->manager->addConnection($params, $params['connectionName'] ?? 'default');
+		$this->manager->addConnection($this->params, $params['connectionName'] ?? 'default');
 
 		$this->dispatcher = new Dispatcher();
 		$this->manager->setEventDispatcher($this->dispatcher);
+	}
+	
+	/**
+	 * @return array
+	 */
+	public function __debugInfo() {
+		$result = get_object_vars($this);
+		$result['params']['password'] = '***'; // protect password value when dumping
+		return $result;
 	}
 	
 	/**

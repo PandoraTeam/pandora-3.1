@@ -158,11 +158,18 @@ class Response implements ResponseInterface {
 		self::CODE_NOT_EXTENDED => 'Not Extended',
 		self::CODE_NETWORK_AUTHENTICATION_REQUIRED => 'Network Authentication Required',
     ];
-
+	
+	/**
+	 * @param int $status
+	 * @return string
+	 */
     public static function getStatusText(int $status): string {
         return self::$statusText[$status];
     }
-
+	
+	/**
+	 * Send headers
+	 */
 	protected function sendHeaders(): void {
 		if (headers_sent()) {
 			return;
@@ -181,10 +188,29 @@ class Response implements ResponseInterface {
 			header('Set-Cookie: '.$cookie, false, $this->status);
 		} */
 	}
-
+	
+	/**
+	 * {@inheritdoc}
+	 */
 	public function send(): void {
 		$this->sendHeaders();
-		echo $this->content;
+		if ($this->content) {
+			echo $this->content;
+		}
+	}
+	
+	/**
+	 * {@inheritdoc}
+	 */
+	public function getStatus(): int {
+		return $this->status;
+	}
+	
+	/**
+	 * @return string
+	 */
+	public function getContent(): string {
+		return $this->content;
 	}
 
 }

@@ -1,6 +1,7 @@
 <?php
 namespace Pandora3\Eloquent;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Pandora3\Contracts\AuthenticationUserInterface;
 use Pandora3\Contracts\ContainerInterface;
@@ -27,20 +28,26 @@ class EloquentUserProvider implements UserProviderInterface {
 	 * @param string $userClassName
 	 */
 	public static function use(ContainerInterface $container, string $userClassName): void {
-		$container->singleton(UserProviderInterface::class, function() use ($userClassName) {
+		$container->singleton(UserProviderInterface::class, static function() use ($userClassName) {
 			return new EloquentUserProvider($userClassName);
 		});
+	}
+	
+	/**
+	 * @return Builder
+	 */
+	protected function query(): Builder {
+		/** @var Model $userClassName */
+		$userClassName = $this->userClassName;
+		return $userClassName::query();
 	}
 	
 	/**
 	 * {@inheritdoc}
 	 */
 	public function getUserById($id): ?AuthenticationUserInterface {
-		/** @var Model $userClassName */
-		$userClassName = $this->userClassName;
-
 		/** @var AuthenticationUserInterface $user */
-		$user = $userClassName::query()->find($id);
+		$user = $this->query()->find($id);
 		return $user;
 	}
 
@@ -48,11 +55,8 @@ class EloquentUserProvider implements UserProviderInterface {
 	 * {@inheritdoc}
 	 */
 	public function getUserByLogin(string $login): ?AuthenticationUserInterface {
-		/** @var Model $userClassName */
-		$userClassName = $this->userClassName;
-
 		/** @var AuthenticationUserInterface $user */
-		$user = $userClassName::query()->where(['login' => $login])->first();
+		$user = $this->query()->where(['login' => $login])->first();
 		return $user;
 	}
 

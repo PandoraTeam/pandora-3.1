@@ -11,14 +11,20 @@ class ValidationFormException extends \LogicException implements ValidationExcep
 
 	/** @var array */
 	protected $messages;
+	
+	/** @var string|null */
+	protected $formName;
 
 	/**
 	 * NoMatchedRouteException constructor
-	 * @param string $message
+	 * @param array|string $messages
+	 * @param string|null $formName
 	 */
-	public function __construct(string $message) {
+	public function __construct($messages, ?string $formName = null) {
 		parent::__construct("Validation failed", E_WARNING);
-		$this->messages = [$message];
+		$this->messages = is_array($messages)
+			? $messages : [$messages];
+		$this->formName = $formName;
 	}
 
 	/**
@@ -27,5 +33,12 @@ class ValidationFormException extends \LogicException implements ValidationExcep
 	public function getMessages(): array {
 		return $this->messages;
 	}
-
+	
+	/**
+	 * @return null|string
+	 */
+	function getFormName(): ?string {
+		return $this->formName;
+	}
+	
 }

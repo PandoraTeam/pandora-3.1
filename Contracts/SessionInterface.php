@@ -30,5 +30,30 @@ interface SessionInterface {
 	 * @param string $key
 	 */
 	function remove(string $key): void;
+	
+	/**
+	 * @return string
+	 */
+	function getId(): string;
+	
+	/**
+	 * @param string $id
+	 */
+	function setId(string $id): void;
+	
+	/**
+	 * Start session
+	 */
+	function start(): void;
+	
+	/**
+	 * Close session
+	 */
+	function close(): void;
+	
+	/**
+	 * Write and close session
+	 */
+	function save(): void;
 
 }

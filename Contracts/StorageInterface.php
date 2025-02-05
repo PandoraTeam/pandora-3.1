@@ -19,7 +19,14 @@ interface StorageInterface {
 	 * @return bool
 	 */
 	function upload($file, string $path, bool $move = true): bool;
-
+	
+	/**
+	 * @param UploadedFileInterface $file
+	 * @param string $path
+	 * @return string
+	 */
+	function uploadFile(UploadedFileInterface $file, string $path): string;
+	
 	/**
 	 * @param string $path
 	 * @return bool

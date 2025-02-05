@@ -12,16 +12,21 @@ class File implements FileInterface {
 	/** @var string */
 	protected $path;
 	
+	/** @var string|null */
+	protected $uploadName;
+	
 	/**
 	 * File constructor
 	 * @param string $path
+	 * @param string|null $uploadName
 	 */
-	public function __construct(string $path) {
+	public function __construct(string $path, ?string $uploadName = null) {
 		$this->path = $path;
+		$this->uploadName = $uploadName;
 	}
 
 	// todo: implement
-	/* public function move(string $directory, ?string $name = null) {
+	/* public function move(string $directory, ?string $name = null): FileInterface {
 	} */
 	
 	/**
@@ -45,7 +50,14 @@ class File implements FileInterface {
 		$extension = FileUtils::getFileExtension($this->path);
 		return FileUtils::getFileName($this->path).($extension ? '.'.$extension : '');
 	}
-
+	
+	/**
+	 * {@inheritdoc}
+	 */
+	function getUploadName(): string {
+		return $this->uploadName ?? $this->getName();
+	}
+	
 	/**
 	 * {@inheritdoc}
 	 */

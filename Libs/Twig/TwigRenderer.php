@@ -31,11 +31,12 @@ class TwigRenderer implements RendererInterface {
 	/**
 	 * @param ContainerInterface $container
 	 * @param string $path
+	 * @param array $options
 	 * @param \Closure|null $initCallback
 	 */
-	public static function use(ContainerInterface $container, string $path, ?\Closure $initCallback): void {
-		$container->singleton(RendererInterface::class, function() use ($path, $initCallback) {
-			$renderer = new TwigRenderer($path);
+	public static function use(ContainerInterface $container, string $path, array $options = [], ?\Closure $initCallback): void {
+		$container->singleton(RendererInterface::class, static function() use ($path, $options, $initCallback) {
+			$renderer = new TwigRenderer($path, $options);
 			if ($initCallback) {
 				$initCallback($renderer);
 			}

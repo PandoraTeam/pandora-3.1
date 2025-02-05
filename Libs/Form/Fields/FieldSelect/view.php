@@ -8,9 +8,12 @@
  * @var array $options
  * @var bool $groupOptions
  * @var bool $wrap
+ * @var string $labelIcon
+ * @var string $tooltip
+ * @var string $description
  */
 
-$renderOptions = function($options) use ($value) {
+$renderOptions = static function($options) use ($value) {
 	foreach ($options as $optionValue => $params) {
 		if (is_scalar($params)) {
 			$params = ['title' => $params];
@@ -28,7 +31,12 @@ if ($wrap) {
 	echo '<div '.$fieldHtmlAttribs.'>';
 		echo '<label>';
 			if ($label) {
-				echo '<span class="label">'.htmlentities($label).'</span>';
+				echo '<span class="label">';
+					echo $labelIcon.htmlentities($label);
+					if ($tooltip) {
+						echo '<i class="field-tooltip-icon mdi mdi-help-circle" title="'.$tooltip.'"></i>';
+					}
+				echo '</span>';
 			}
 }
 			echo '<div class="select-wrap">';
@@ -48,6 +56,9 @@ if ($wrap) {
 					}
 				echo '</select><div class="custom-select"></div>';
 			echo '</div>';
+			if ($description) {
+				echo '<span class="field-description">'.$description.'</span>';
+			}
 
 if ($wrap) {
 		echo '</label>';

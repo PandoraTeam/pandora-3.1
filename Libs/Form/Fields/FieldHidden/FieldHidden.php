@@ -9,4 +9,11 @@ use Pandora3\Form\Fields\FormField;
  */
 class FieldHidden extends FormField {
 
+	/**
+	 * {@inheritdoc}
+	 */
+	protected function getValue() {
+		return (string) $this->value;
+	}
+
 }

@@ -21,6 +21,9 @@ class Validator implements ValidatorInterface {
 	
 	/** @var array */
 	protected $ruleMessages = [];
+	
+	/** @var array */
+	protected $fieldLabels = [];
 
 	/** @var array */
 	protected static $ruleTypes = [];
@@ -34,7 +37,7 @@ class Validator implements ValidatorInterface {
 		$this->rules = $rules;
 		$this->ruleMessages = $messages;
 	}
-
+	
 	/**
 	 * @param string $type
 	 * @param string $className
@@ -81,6 +84,13 @@ class Validator implements ValidatorInterface {
 	/**
 	 * {@inheritdoc}
 	 */
+	public function setFieldLabels(array $labels = []): void {
+		$this->fieldLabels = $labels;
+	}
+
+	/**
+	 * {@inheritdoc}
+	 */
 	public function validate($data): void {
 		if ($data instanceof RequestInterface) {
 			$data = $data->all();
@@ -113,8 +123,31 @@ class Validator implements ValidatorInterface {
 					$rule = $this->createRule($ruleType, $arguments);
 				}
 				if (!$rule->validate($value, $data)) {
-					$message = $this->ruleMessages[$fieldName][$ruleType] ?? $rule->message; // todo: support to customize different messages of a single rule
-					$message = str_replace('{:field}', $fieldName, $message);
+					// todo: >>>
+					/* if (!is_string($fieldName)) {
+						\Logger::warning('Validator assertion failed', [
+							'exception' => new \LogicException('fieldName key is not string')
+						]);
+					} */
+					/* if (!is_string($ruleType) && !($ruleType instanceof \Closure)) {
+						\Logger::warning('Validator assertion failed', [
+							'exception' => new \LogicException('ruleType key is not string')
+						]);
+					} */
+					// <<<
+					$message = null;
+					if (!($ruleType instanceof \Closure)) {
+						$message = $this->ruleMessages[$fieldName][$ruleType] ?? null;
+					}
+					if (is_array($message)) {
+						$message = $message[$rule->message] ?? null;
+					}
+					if (is_null($message)) {
+						$message = $rule->message;
+					}
+					$fieldLabel = $this->fieldLabels[$fieldName] ?? $fieldName;
+					$message = $this->formatRuleMessage($message, array_replace(['field' => $fieldLabel], $rule->messageParams));
+					// $message = str_replace('{:field}', $fieldLabel, $message);
 					// str_replace('{:field}', $label ?: $fieldName, $message);
 					$this->messages[$fieldName] = $message;
 					$isValid = false;
@@ -125,6 +158,23 @@ class Validator implements ValidatorInterface {
 		if (!$isValid) {
 			throw new ValidationException($this->messages);
 		}
+	}
+	
+	/**
+	 * @param string $message
+	 * @param array $params
+	 * @return string
+	 */
+	protected function formatRuleMessage(string $message, array $params): string {
+		$replaceParams = [];
+		foreach ($params as $param => $value) {
+			$replaceParams['{:'.$param.'}'] = $value;
+		}
+		return strtr($message, $replaceParams);
+		/* $replaceParams = array_map(static function($param) {
+			return '{:'.$param.'}';
+		}, array_keys($params));
+		return str_replace($replaceParams, array_values($params), $message); */
 	}
 
 	/**
@@ -152,4 +202,5 @@ Validator::registerRules([
 	'email' => Rules\RuleEmail::class,
 	'file' => Rules\RuleFile::class,
 	'date' => Rules\RuleDate::class,
+	'decimal' => Rules\RuleDecimal::class,
 ]);

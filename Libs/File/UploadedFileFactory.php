@@ -16,17 +16,18 @@ class UploadedFileFactory implements UploadedFileFactoryInterface {
 	
 	/**
 	 * @param array $file
-	 * @return UploadedFileInterface
+	 * @return UploadedFileInterface|null
 	 */
-	public function createUploadedFile(array $file) {
+	public function createUploadedFile(array $file): ?UploadedFileInterface {
 		$error = $file['error'] ?? null;
-		if ($error !== UPLOAD_ERR_NO_FILE) {
-			if (empty($file['tmp_name'])) {
-				throw new \RuntimeException('Uploaded file "tmp_name" is missing');
-			}
-			if (empty($file['name'])) {
-				throw new \RuntimeException('Uploaded file "name" is missing');
-			}
+		if ($error === UPLOAD_ERR_NO_FILE) {
+			return null;
+		}
+		if (empty($file['tmp_name'])) {
+			throw new \RuntimeException('Uploaded file "tmp_name" is missing');
+		}
+		if (empty($file['name'])) {
+			throw new \RuntimeException('Uploaded file "name" is missing');
 		}
 		return new UploadedFile(
 			$file['tmp_name'],

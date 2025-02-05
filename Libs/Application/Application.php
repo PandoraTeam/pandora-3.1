@@ -8,10 +8,9 @@ use Pandora3\Contracts\RedirectorInterface;
 use Pandora3\Contracts\RequestFactoryInterface;
 use Pandora3\Contracts\RequestHandlerInterface;
 use Pandora3\Contracts\RequestInterface;
-use Pandora3\Contracts\ResponseFactoryInterface;
 use Pandora3\Contracts\RouteResolverInterface;
 use Pandora3\Contracts\RouterInterface;
-use Pandora3\Http\Request;
+use Pandora3\Events\Dispatcher;
 
 /**
  * Pandora manifest
@@ -88,15 +87,25 @@ abstract class Application extends BaseApplication {
 	 */
 	protected function dependencies(ContainerInterface $container): void {
 		$container->bind(RedirectorInterface::class, Redirector::class);
-		$container->bind(RouteResolverInterface::class, RouteResolver::class);
-		$container->bind(RequestFactoryInterface::class, HttpFactory::class);
-		$container->bind(ResponseFactoryInterface::class, HttpFactory::class);
-		$container->bind(ApplicationExceptionMiddleware::class, function() use ($container) {
-			return $container->build(ApplicationExceptionMiddleware::class, ['environment' => $this->getEnvironment()]);
-		});
 		$container->singleton(Redirector::class);
-		$container->singleton(HttpFactory::class);
-		$container->bind(RequestInterface::class, Request::class); // todo: temporary
+		$container->singleton(Dispatcher::class);
+
+		// todo: extract FlashMessages to separate package
+		// FlashMessages requires Events package
+		$container->singleton(FlashMessages::class);
+
+		$container->bind(RouteResolverInterface::class, RouteResolver::class);
+
+		$environment = $this->getEnvironment();
+		$baseUri = $this->getBaseUri();
+		$container->bind(ApplicationExceptionMiddleware::class,
+			static function(ContainerInterface $container) use ($environment, $baseUri) {
+				return $container->build(ApplicationExceptionMiddleware::class, [
+					'environment' => $environment,
+					'baseUri' => $baseUri,
+				]);
+			}
+		);
 	}
 
 	/**
@@ -109,6 +118,13 @@ abstract class Application extends BaseApplication {
 	}
 
 	/**
+	 * @return ContainerInterface
+	 */
+	public function getContainer(): ContainerInterface {
+		return $this->container;
+	}
+	
+	/**
 	 * {@inheritdoc}
 	 */
 	public function run(): void {
@@ -120,23 +136,30 @@ abstract class Application extends BaseApplication {
 			$response = $this->requestHandler->handleRequest($request);
 			$response->send();
 		} catch (\Throwable $error) {
-			$this->handleError($error, $request);
+			$this->handleException($error, $request);
 		}
 	}
 	
 	/**
-	 * @param \Throwable $error
+	 * @param \Throwable $exception
 	 * @param RequestInterface|null $request
 	 */
-	protected function handleError(\Throwable $error, ?RequestInterface $request = null): void {
-		parent::handleError($error);
+	protected function handleException(\Throwable $exception, ?RequestInterface $request = null): void {
+		parent::handleException($exception);
 	}
 	
 	/**
 	 * @return string
 	 */
 	public function getSecret(): string {
-		return $this->config['secret'];
+		return $this->config->get('secret');
+	}
+	
+	/**
+	 * @return string
+	 */
+	public function getBaseUri(): string {
+		return $this->config->get('baseUri', '/');
 	}
 	
 	/**

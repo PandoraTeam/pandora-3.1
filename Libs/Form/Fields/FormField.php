@@ -60,6 +60,10 @@ abstract class FormField {
 		return array_replace([
 			'name' => $this->name,
 			'wrap' => true,
+			'showLabel' => true,
+			'labelIcon' => '',
+			'tooltip' => '',
+			'description' => '',
 			'value' => $this->getValue(),
 			'htmlAttribs' => $htmlAttribs,
 			'fieldHtmlAttribs' => $fieldHtmlAttribs,
@@ -90,7 +94,11 @@ abstract class FormField {
 	 */
 	protected function getFieldHtmlAttribs(): array {
 		$fieldAttribs = $this->params['fieldAttribs'] ?? [];
+		$optional = $this->params['optional'] ?? false;
 		$fieldClass = $fieldAttribs['class'] ?? '';
+		if ($optional) {
+			$fieldClass = 'optional '.$fieldClass;
+		}
 		$fieldAttribs['class'] = 'field ' . $fieldClass;
 		return $fieldAttribs;
 	}
@@ -100,9 +108,16 @@ abstract class FormField {
 	 */
 	protected function getHtmlAttribs(): array {
 		$attribs = $this->params['attribs'] ?? [];
+		$isValid = $this->params['isValid'] ?? true;
+		$class = $this->params['class'] ?? null;
+		if (!$isValid) {
+			$class = $class
+				? ('invalid ' . $class)
+				: 'invalid';
+		}
 		return array_replace(
 			$attribs, [
-				'class' => $this->params['class'] ?? null,
+				'class' => $class,
 				'id' => $this->params['id'] ?? null,
 			]
 		);

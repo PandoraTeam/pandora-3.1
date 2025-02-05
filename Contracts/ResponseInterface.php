@@ -11,5 +11,10 @@ interface ResponseInterface {
 	 * Send response
 	 */
 	function send(): void;
+	
+	/**
+	 * @return int
+	 */
+	function getStatus(): int;
 
 }

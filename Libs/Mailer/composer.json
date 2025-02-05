@@ -1,0 +1,22 @@
+{
+	"name": "pandora3/mailer",
+	"description": "Pandora 3: Mailer",
+	"homepage": "https://github.com/PandoraTeam/pandora3-Mailer",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Petr Gostin",
+			"email": "nescafe238@gmail.com",
+			"homepage": "http://u-238.ru"
+		}
+	],
+	"require": {
+		"pandora3/contracts": "^1.0",
+		"phpmailer/phpmailer": "^6.5"
+	},
+	"autoload": {
+		"psr-4": {
+			"Pandora3\\Mailer\\": "/"
+		}
+	}
+}

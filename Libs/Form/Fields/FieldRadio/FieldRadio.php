@@ -45,6 +45,7 @@ class FieldRadio extends FormField {
 			$options = $options();
 		}
 
+		// todo: use $this->buildHtmlAttribs();
 		$inputHtmlAttribs = '';
 		foreach ($this->getInputHtmlAttribs() as $key => $value) {
 			if (!is_null($value)) {

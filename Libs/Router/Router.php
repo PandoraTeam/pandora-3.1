@@ -25,6 +25,12 @@ class Router implements RouterInterface, RequestHandlerInterface {
 	
 	/** @var mixed */
 	protected $pageNotFoundHandler;
+
+	/** @var string */
+	protected $baseUri;
+
+	/** @var string */
+	protected $baseUriPrefix;
 	
 	public const METHOD_GET = 'get';
 	public const METHOD_POST = 'post';
@@ -58,10 +64,13 @@ class Router implements RouterInterface, RequestHandlerInterface {
 	 * Router constructor
 	 * @param RouteResolverInterface $routeResolver
 	 * @param mixed $pageNotFoundHandler
+	 * @param string $baseUri
 	 */
-	public function __construct(RouteResolverInterface $routeResolver, $pageNotFoundHandler) {
+	public function __construct(RouteResolverInterface $routeResolver, $pageNotFoundHandler, string $baseUri = '/') {
 		$this->routeResolver = $routeResolver;
 		$this->pageNotFoundHandler = $pageNotFoundHandler;
+		$this->baseUri = $baseUri;
+		$this->baseUriPrefix = ($baseUri === '/') ? '' : $baseUri;
 	}
 
 	/**
@@ -70,7 +79,7 @@ class Router implements RouterInterface, RequestHandlerInterface {
 	 */
 	public static function registerPattern(string $alias, string $pattern): void {
 		if (isset(self::$patterns[$alias])) {
-			// todo: warning "Unable to redefine route pattern"
+			trigger_error("Unable to redefine route pattern for alias '$alias'", E_USER_WARNING);
 			return;
 		}
 		self::$patterns[$alias] = '('.$pattern.')';
@@ -79,13 +88,20 @@ class Router implements RouterInterface, RequestHandlerInterface {
 	/**
 	 * @param ContainerInterface $container
 	 * @param mixed $pageNotFoundHandler
+	 * @param string $baseUri
 	 */
-	public static function use(ContainerInterface $container, $pageNotFoundHandler): void {
+	public static function use(ContainerInterface $container, $pageNotFoundHandler, string $baseUri = '/'): void {
 		$container->bind(RouterInterface::class, Router::class);
 		$container->bind(RequestHandlerInterface::class, Router::class);
-		$container->singleton(Router::class, function() use ($container, $pageNotFoundHandler) {
-			return $container->build(Router::class, ['pageNotFoundHandler' => $pageNotFoundHandler]);
-		});
+		$container->singleton(
+			Router::class,
+			static function(ContainerInterface $container) use ($pageNotFoundHandler, $baseUri) {
+				return $container->build(Router::class, [
+					'pageNotFoundHandler' => $pageNotFoundHandler,
+					'baseUri' => $baseUri
+				]);
+			}
+		);
 	}
 
 	/**
@@ -93,7 +109,7 @@ class Router implements RouterInterface, RequestHandlerInterface {
 	 * @param \Closure $callback
 	 */
 	public function group(array $params, \Closure $callback): void {
-		$routeGroup = new RouteGroup($params);
+		$routeGroup = new RouteGroup($params, $this->baseUri);
 		$callback($routeGroup);
 		$routes = $routeGroup->getRoutes();
 		foreach ($routes as $route) {
@@ -106,7 +122,7 @@ class Router implements RouterInterface, RequestHandlerInterface {
 	 * @return string
 	 */
 	public static function generatePattern(string $path): string {
-		$pattern = preg_replace_callback('/\\\\{(\w+)\\\\}/', function($matches) use ($path) {
+		$pattern = preg_replace_callback('/\\\\{(\w+)\\\\}/', static function($matches) use ($path) {
 			$patternType = $matches[1];
 			$pattern = self::$patterns[$patternType] ?? null;
 			if (is_null($pattern)) {
@@ -131,7 +147,12 @@ class Router implements RouterInterface, RequestHandlerInterface {
 	 * {@inheritdoc}
 	 */
 	protected function createRoute(string $path, int $methodFlags, $handler, $name = ''): Route {
-		$path = preg_replace('#^/?#', '/', $path);
+		/* // add leading slash to path
+		$path = $this->baseUriPrefix . preg_replace('#^/?#', '/', $path); */
+		
+		// path should always start with slash
+		// remove trailing slash, but keep it if path equal '/'
+		$path = preg_replace('#(.+)/$#', '$1', $this->baseUriPrefix . $path);
 		$pattern = self::generatePattern($path);
 		return new Route($path, $pattern, $methodFlags, $handler, $name);
 	}
@@ -147,10 +168,10 @@ class Router implements RouterInterface, RequestHandlerInterface {
 		}
 		$i = 0;
 		$argumentCount = count($arguments);
-		return preg_replace_callback('/{\w+}/', function() use ($arguments, $argumentCount, &$i) {
-			/* if ($i >= $argumentCount) {
-				// todo: warning "Too many arguments for route"
-			} */
+		return preg_replace_callback('/{\w+}/', static function() use ($arguments, $argumentCount, $routeName, &$i) {
+			if ($i >= $argumentCount) {
+				trigger_error("Too many arguments for route '$routeName'", E_USER_WARNING);
+			}
 			$argument = $arguments[$i] ?? null;
 			$i++;
 			return $argument;

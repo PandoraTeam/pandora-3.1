@@ -4,6 +4,9 @@ namespace Pandora3\Form;
 use Pandora3\Contracts\ContainerInterface;
 use Pandora3\Contracts\RequestInterface;
 use Pandora3\Contracts\SanitizerInterface;
+use Pandora3\Contracts\SessionInterface;
+use Pandora3\Contracts\ValidationExceptionInterface;
+use Pandora3\Form\Exceptions\ValidationFormException;
 use Pandora3\Form\Fields\FormField;
 
 /**
@@ -17,6 +20,9 @@ abstract class Form {
 
 	/** @var RequestInterface */
 	protected $request;
+	
+	/** @var \Closure */
+	protected $getSecret;
 
 	/** @var string */
 	protected $method = 'post';
@@ -28,7 +34,7 @@ abstract class Form {
 	protected $htmlAttribs = [];
 
 	/** @var array */
-	protected $values;
+	protected $values = [];
 
 	/** @var array */
 	protected $fieldParams;
@@ -40,11 +46,13 @@ abstract class Form {
 	 * Form constructor
 	 * @param ContainerInterface $container
 	 * @param RequestInterface $request
+	 * @param \Closure $getSecret
 	 * @param object|array $values
 	 */
-	public function __construct(ContainerInterface $container, RequestInterface $request, $values = []) {
+	public function __construct(ContainerInterface $container, RequestInterface $request, \Closure $getSecret, $values = []) {
 		$this->container = $container;
 		$this->request = $request;
+		$this->getSecret = $getSecret;
 
 		if (!is_array($values) && !($values instanceof \stdClass)) {
 			$className = static::class;
@@ -265,20 +273,24 @@ abstract class Form {
 
 	/**
 	 * Loads values from request
+	 * @param null|string $method
 	 */
-	protected function load(): void {
+	public function load(?string $method = null): void {
 		$this->beforeLoad();
-	
+		
+		if (is_null($method)) {
+			$method = $this->method;
+		}
 		$request = $this->request;
 
-		/* if ($this->method === 'post' && !$request->isPost()) {
+		/* if ($method === 'post' && !$request->isPost()) {
 			return;
 		} */
 
 		$hasValues = false;
 		$values = [];
 		foreach (array_keys($this->fieldParams) as $fieldName) {
-			if ($this->method === 'post') {
+			if ($method === 'post') {
 				$value = null;
 				if ($this->filesUpload) {
 					$value = $request->file($fieldName);
@@ -290,11 +302,19 @@ abstract class Form {
 			if (!is_null($value)) {
 				$hasValues = true;
 			}
-			$values[$fieldName] = $value;
+			$value = $value ?? $this->values[$fieldName] ?? null;
+			if (!is_null($value)) {
+				$values[$fieldName] = $value;
+			}
 		}
 
-		if ($this->method === 'post' && !$request->isPost() && !$hasValues) {
-			return;
+		if (!$hasValues) {
+			if (
+				$method === 'get' ||
+				($method === 'post' && !$request->isPost())
+			) {
+				return;
+			}
 		}
 
 		$values = $this->sanitize($values);
@@ -302,6 +322,51 @@ abstract class Form {
 		$values = $this->afterLoad($values);
 		foreach ($values as $fieldName => $value) {
 			$this->set($fieldName, $value);
+		}
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getToken() {
+		/** @var SessionInterface $session */
+		$session = $this->container->make(SessionInterface::class);
+		$server = $this->request->server();
+		$userAgent = $server['HTTP_USER_AGENT'] ?? '';
+		$data = implode(':', [
+			$userAgent,
+			$session->getId(),
+			$this->getSubmitUri()
+		]);
+		$getSecret = $this->getSecret;
+		$secret = $getSecret();
+		return hash_hmac('sha512', $data.$secret, $secret);
+	}
+	
+	/**
+	 * Validate SCRF token
+	 */
+	public function validateToken(): void {
+		if ($this->method !== 'post') {
+			throw new \LogicException("Form should have method 'post' to support token validation");
+		}
+		if (!$this->request->isPost()) {
+			throw new \LogicException("Request method is not post");
+		}
+		if ($this->request->post('_token') !== $this->getToken()) {
+			throw new ValidationFormException("Invalid CSRF token", static::class);
+		}
+	}
+	
+	/**
+	 * @return bool
+	 */
+	public function doValidateToken(): bool {
+		try {
+			$this->validateToken();
+			return true;
+		} catch (ValidationExceptionInterface $ex) {
+			return false;
 		}
 	}
 
@@ -318,10 +383,14 @@ abstract class Form {
 				$htmlAttribs .= $key.'="'.htmlspecialchars($value).'" ';
 			}
 		}
-
-		return '<form '.$htmlAttribs.'>';
+		
+		$output = '<form '.$htmlAttribs.'>';
+		if ($this->method === 'post') {
+			$output .= '<input type="hidden" name="_token" value="'.$this->getToken().'">';
+		}
+		return $output;
 	}
-
+	
 	/**
 	 * @return string
 	 */
@@ -357,9 +426,18 @@ abstract class Form {
 			throw new \LogicException("Field class '$fieldClass' not found for field '$fieldName'");
 		}
 		$params = array_replace($fieldParams, $params);
-		$value = array_key_exists('value', $params)
+		if (array_key_exists('value', $params)) {
+			$value = $params['value'];
+			unset($params['value']);
+			if ($value instanceof \Closure) {
+				$value = $value($this->get($fieldName));
+			}
+		} else {
+			$value = $this->get($fieldName);
+		}
+		/* $value = array_key_exists('value', $params)
 			? $params['value']
-			: $this->get($fieldName);
+			: $this->get($fieldName); */
 		return new $fieldClass($fieldName, $value, $params);
 	}
 
@@ -387,5 +465,6 @@ Form::registerFields([
 	'select' => Fields\FieldSelect\FieldSelect::class,
 	'radio' => Fields\FieldRadio\FieldRadio::class,
 	'checkbox' => Fields\FieldCheckbox\FieldCheckbox::class,
+	'switch' => Fields\FieldSwitch\FieldSwitch::class,
 	'checkboxGroup' => Fields\FieldCheckboxGroup\FieldCheckboxGroup::class,
 ]);

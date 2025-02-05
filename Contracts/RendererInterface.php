@@ -13,6 +13,6 @@ interface RendererInterface {
 	 * @return string
 	 * @throws \RuntimeException
 	 */
-	public function render(string $viewPath, array $context = []): string;
+	function render(string $viewPath, array $context = []): string;
 
 }

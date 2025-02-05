@@ -36,11 +36,13 @@ class FilterCast {
 			case 'bool':
 				return (bool) $value;
 			case 'object':
-				return is_array($value)
-					? (object) $value
-					: json_decode($value, false);
+				return is_string($value)
+					? json_decode($value, false)
+					: (object) $value;
 			case 'array':
-				return json_decode($value, true);
+				return is_string($value)
+					? json_decode($value, true)
+					: (array) $value;
 			/* case 'collection':
 				$array = is_array($value) ? $value : json_decode($value, true);
 				return new Collection($array); */

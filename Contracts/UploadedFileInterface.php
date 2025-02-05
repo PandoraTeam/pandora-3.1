@@ -9,7 +9,7 @@ interface UploadedFileInterface extends FileInterface {
 
 	/**
 	 * @param string $directory
-	 * @param null|string $name
+	 * @param string|null $name
 	 * @return FileInterface
 	 */
 	function move(string $directory, ?string $name = null): FileInterface;
@@ -18,11 +18,26 @@ interface UploadedFileInterface extends FileInterface {
 	 * @return string
 	 */
 	function getUploadName(): string;
+	
+	/**
+	 * @return string
+	 */
+	function getUploadNameWithoutExtension(): string;
+	
+	/**
+	 * @return string
+	 */
+	function getExtension(): string;
 
 	/**
-	 * @return null|string
+	 * @return string|null
 	 */
 	function getMediaType(): ?string;
+	
+	/**
+	 * @return int|null
+	 */
+	function getSize(): ?int;
 
 	/**
 	 * @return int|null

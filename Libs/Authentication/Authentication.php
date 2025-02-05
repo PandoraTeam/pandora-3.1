@@ -1,18 +1,24 @@
 <?php
 namespace Pandora3\Authentication;
+
 use Pandora3\Authentication\Exceptions\AuthUserNotFoundException;
 use Pandora3\Authentication\Exceptions\AuthWrongPasswordException;
 use Pandora3\Contracts\AuthenticationUserInterface;
+use Pandora3\Contracts\ContainerInterface;
+use Pandora3\Contracts\RequestInterface;
 use Pandora3\Contracts\SessionInterface;
 use Pandora3\Contracts\UserProviderInterface;
+use Pandora3\Http\Request;
 
 /**
  * Class Authentication
- * @package Pandora3\Libs\Authentication
+ * @package Pandora3\Authentication
  */
 class Authentication {
 
-	const AuthenticationSessionKey = 'authenticationUserId';
+	protected const SessionKeyUserId = 'authenticationUserId';
+	
+	protected const SessionKeyReturnUri = 'authenticationReturnUri';
 
 	/** @var SessionInterface */
 	protected $session;
@@ -30,14 +36,21 @@ class Authentication {
 		$this->session = $session;
 		$this->userProvider = $userProvider;
 	}
-	
+
+	/**
+	 * @param ContainerInterface $container
+	 */
+	public static function use(ContainerInterface $container): void {
+		$container->singleton(Authentication::class);
+	}
+
 	/**
 	 * @param AuthenticationUserInterface $user
 	 */
 	public function authenticateUser(AuthenticationUserInterface $user): void {
 		$this->user = $user;
 		$this->userId = $user->getAuthenticationId();
-		$this->session->set(self::AuthenticationSessionKey, $this->userId);
+		$this->session->set(self::SessionKeyUserId, $this->userId);
 	}
 	
 	/**
@@ -46,7 +59,7 @@ class Authentication {
 	public function signOut(): void {
 		$this->user = null;
 		$this->userId = 0;
-		$this->session->remove(self::AuthenticationSessionKey);
+		$this->session->remove(self::SessionKeyUserId);
 	}
 	
 	/**
@@ -67,18 +80,62 @@ class Authentication {
 		$this->authenticateUser($user);
 		return $user;
 	}
-	
+
 	/**
 	 * @return AuthenticationUserInterface|null
 	 */
 	public function getUser(): ?AuthenticationUserInterface {
 		if (is_null($this->userId)) {
-			$this->userId = $this->session->get(self::AuthenticationSessionKey, 0);
-			if ($this->userId) {
-				$this->user = $this->userProvider->getUserById($this->userId);
-			}
+			$this->userId = $this->session->get(self::SessionKeyUserId, 0);
+		}
+		if ($this->userId && is_null($this->user)) {
+			$this->user = $this->userProvider->getUserById($this->userId);
+			// todo: should we do something like this?
+			// if (!$this->user) { $this->signOut(); }
 		}
 		return $this->user;
+	}
+	
+	/**
+	 * @return int|null
+	 */
+	public function getUserId(): ?int {
+		if (is_null($this->userId)) {
+			$this->userId = $this->session->get(self::SessionKeyUserId, 0);
+		}
+		return $this->userId ?: null;
+	}
+	
+	/**
+	 * @param null|string $returnUri
+	 */
+	public function setReturnUri(?string $returnUri): void {
+		$this->session->set(self::SessionKeyReturnUri, $returnUri);
+	}
+	
+	/**
+	 * @param RequestInterface $request
+	 */
+	public function setReturnUriFromRequest(RequestInterface $request): void {
+		if ($request->getMethod() === Request::METHOD_GET) {
+			$params = http_build_query($request->getValues());
+			if ($params) {
+				$params = '?' . $params;
+			}
+			$this->setReturnUri($request->getUri() . $params);
+		}
+	}
+	
+	/**
+	 * @param bool $removeSession
+	 * @return null|string
+	 */
+	public function getReturnUri(bool $removeSession = false): ?string {
+		$returnUri = $this->session->get(self::SessionKeyReturnUri);
+		if ($removeSession && !is_null($returnUri)) {
+			$this->session->remove(self::SessionKeyReturnUri);
+		}
+		return $returnUri;
 	}
 
 }

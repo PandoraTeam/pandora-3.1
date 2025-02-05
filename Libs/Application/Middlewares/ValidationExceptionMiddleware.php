@@ -9,12 +9,15 @@ use Pandora3\Contracts\ResponseInterface;
 use Pandora3\Contracts\SessionInterface;
 use Pandora3\Contracts\ValidationExceptionInterface;
 use Pandora3\Http\Request;
+use Pandora3\Http\Response;
 
 /**
  * Class ValidationExceptionMiddleware
  * @package Pandora3\Application\Middlewares
  */
 class ValidationExceptionMiddleware implements MiddlewareInterface {
+
+	protected const SessionKeyValidationData = '_validationFailed';
 
 	/** @var ContainerInterface */
 	protected $container;
@@ -42,13 +45,16 @@ class ValidationExceptionMiddleware implements MiddlewareInterface {
 	 * @return RequestInterface
 	 */
 	protected function prepareRequest(RequestInterface $request): RequestInterface {
-		$validationData = $this->session->get('_validationFailed');
-		$this->session->remove('_validationFailed');
+		$validationData = $this->session->get(self::SessionKeyValidationData);
+		$this->session->remove(self::SessionKeyValidationData);
 		if (!$validationData || $request->getUri() !== $validationData['uri']) {
 			return $request;
 		}
 		$post = array_replace($request->postValues(), $validationData['post']);
-		$attributes = array_replace($request->attributes(), ['validationMessages' => $validationData['messages']]);
+		$attributes = array_replace($request->attributes(), [
+			'validationMessages' => $validationData['messages'],
+			'validationForm' => $validationData['formName'] ?? null,
+		]);
 		return $this->container->make(RequestInterface::class, [ // todo: probably use factory or withPost()
 			'method' => $request->getMethod(), 'uri' => $request->getUri(),
 			'get' => $request->getValues(), 'post' => $post,
@@ -65,15 +71,15 @@ class ValidationExceptionMiddleware implements MiddlewareInterface {
 		$server = $request->server();
 		$uriReferer = $server['HTTP_REFERER'] ?? null;
 		$serverName = $server['SERVER_NAME'] ?? null;
-		dump($server);
 		if (!$serverName) {
-			// todo: log warning "Server name is missing"
+			trigger_error('Server name is missing', E_USER_WARNING);
 			return null;
 		}
 		$host = parse_url($uriReferer, PHP_URL_HOST);
 		if (
 			$host !== $serverName ||
-			!preg_match('#^(?:http:|https:|)?//[^/]+(.*)$#', $uriReferer, $matches)
+			// !preg_match('#^(?:http:|https:|)//[^/]+([^?]*)#', $uriReferer, $matches)
+			!preg_match('#^(?:http:|https:|)//[^/]+(.*)#', $uriReferer, $matches)
 		) {
 			return null;
 		}
@@ -89,14 +95,16 @@ class ValidationExceptionMiddleware implements MiddlewareInterface {
 			return $next($request, ...$arguments);
 		} catch (ValidationExceptionInterface $ex) {
 			$uriReferer = $this->getReferer($request);
-			$this->session->set('_validationFailed', [
+			$this->session->set(self::SessionKeyValidationData, [
 				'post' => $request->all(Request::METHOD_POST),
 				'messages' => $ex->getMessages(),
+				'formName' => $ex->getFormName(),
 				'uri' => $uriReferer,
 			]);
 			if (!$uriReferer) {
-				// todo: log warning "Could not redirect, http referer is missing"
-				header("HTTP/1.1 422 Unprocessable Entity", true, 422);
+				trigger_error('Could not redirect. Referer uri is missing', E_USER_WARNING);
+				// header("HTTP/1.1 422 Unprocessable Entity", true, Response::CODE_UNPROCESSABLE_ENTITY);
+				(new Response('', Response::CODE_UNPROCESSABLE_ENTITY))->send();
 				throw $ex;
 			}
 			return $this->redirector->redirectUri($uriReferer);

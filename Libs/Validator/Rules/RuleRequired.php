@@ -2,12 +2,13 @@
 namespace Pandora3\Validator\Rules;
 
 use Pandora3\Contracts\UploadedFileInterface;
+use Pandora3\Validator\BaseRule;
 
 /**
  * Class RuleRequired
  * @package Pandora3\Validator\Rules
  */
-class RuleRequired {
+class RuleRequired extends BaseRule {
 
 	/** @var string */
 	public $message = 'Field "{:field}" is required'; // 'Заполните поле "{:field}"'

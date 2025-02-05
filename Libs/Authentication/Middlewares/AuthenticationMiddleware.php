@@ -34,10 +34,9 @@ class AuthenticationMiddleware implements MiddlewareInterface {
 	 * @param \Closure $forbiddenHandler
 	 */
 	public static function use(ContainerInterface $container, \Closure $forbiddenHandler) {
-		$container->bind(AuthenticationMiddleware::class, function() use ($container, $forbiddenHandler) {
+		$container->singleton(AuthenticationMiddleware::class, static function(ContainerInterface $container) use ($forbiddenHandler) {
 			return $container->build(AuthenticationMiddleware::class, ['forbiddenHandler' => $forbiddenHandler]);
 		});
-		$container->singleton(AuthenticationMiddleware::class);
 	}
 	
 	/**
@@ -46,6 +45,7 @@ class AuthenticationMiddleware implements MiddlewareInterface {
 	public function process(RequestInterface $request, \Closure $next, array $arguments): ResponseInterface {
 		if (!$this->authentication->getUser()) {
 			$forbiddenHandler = $this->forbiddenHandler;
+			$this->authentication->setReturnUriFromRequest($request);
 			return $forbiddenHandler($request, ...$arguments);
 		}
 		return $next($request, ...$arguments);

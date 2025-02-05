@@ -6,6 +6,9 @@
  * @var string $htmlAttribs
  * @var string $fieldHtmlAttribs
  * @var bool $wrap
+ * @var string $labelIcon
+ * @var string $tooltip
+ * @var string $description
  */
 // $disabled = $disabled ?? false;
 
@@ -18,9 +21,17 @@ if ($wrap) {
 				echo '<input type="checkbox" '.$htmlAttribs.' name="'.$name.'" value="1" '.($isChecked ? 'checked' : '').'>';
 				echo '<i class="checkbox-icon"></i>';
 				if ($label) {
-					echo '<span class="label">'.htmlentities($label).'</span>';
+					echo '<span class="label">';
+						echo $labelIcon.htmlentities($label);
+						if ($tooltip) {
+							echo '<i class="field-tooltip-icon mdi mdi-help-circle" title="'.$tooltip.'"></i>';
+						}
+					echo '</span>';
 				}
 			echo '</div>';
+			if ($description) {
+				echo '<span class="field-description">'.$description.'</span>';
+			}
 
 if ($wrap) {
 		echo '</label>';

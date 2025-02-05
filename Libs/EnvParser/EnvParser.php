@@ -7,8 +7,8 @@ namespace Pandora3\EnvParser;
  */
 class EnvParser {
 	
-	private const PATTERN_DOUBLE_QUOTE_STRING = '/^"((?:[^"\\\\]*(?:\\\\.)?)*)"$/';
-	private const PATTERN_SINGLE_QUOTE_STRING = "/^'((?:[^'\\\\]*(?:\\\\.)?)*)'$/";
+	protected const PATTERN_DOUBLE_QUOTE_STRING = '/^"((?:[^"\\\\]*(?:\\\\.)?)*)"$/';
+	protected const PATTERN_SINGLE_QUOTE_STRING = "/^'((?:[^'\\\\]*(?:\\\\.)?)*)'$/";
 	
 	protected static $constantValues = [
 		'true' => true,
@@ -79,7 +79,7 @@ class EnvParser {
 	protected function parseValue(string $value) {
 		$value = trim($value);
 		if ($value[0] === '"' || $value[0] === "'") {
-			return $this->parseString($value);
+			return $this->parseString($value); // todo: probably not handles comment after finishing quote
 		}
 		$value = $this->trimComment($value);
 		$loweredValue = strtolower($value);

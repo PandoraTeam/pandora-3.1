@@ -29,19 +29,10 @@ class Container implements ContainerInterface {
 	 */
 	public function bind(string $abstract, $dependency): void {
 		if (is_null($dependency)) {
-			 // todo: ContainerException
+			 // todo: use typed exception ContainerException
 			throw new \RuntimeException("Unable to bind null dependency for [$abstract]");
 		}
-
-		$previous = $this->dependencies[$abstract] ?? null;
-		if ($dependency !== $previous) {
-			if (isset($this->instances[$abstract])) {
-				throw new \RuntimeException("Unable to modify dependency for [$abstract] due to it's instance already created");
-			}
-			unset($this->canMake[$abstract]);
-		}
-
-		$this->dependencies[$abstract] = $dependency;
+		$this->bindDependency($abstract, $dependency);
 	}
 
 	/**
@@ -49,18 +40,26 @@ class Container implements ContainerInterface {
 	 */
 	public function singleton(string $abstract, $dependency = null): void {
 		if (!is_null($dependency)) {
-			$previous = $this->dependencies[$abstract] ?? null;
-			if ($dependency !== $previous) {
-				if (isset($this->instances[$abstract])) {
-					throw new \RuntimeException("Unable to modify dependency for [$abstract] due to it's instance already created");
-				}
-				unset($this->canMake[$abstract]);
+			$this->bindDependency($abstract, $dependency);
+		}
+		$this->isSingleton[$abstract] = true;
+	}
+	
+	/**
+	 * @param string $abstract
+	 * @param $dependency
+	 */
+	protected function bindDependency(string $abstract, $dependency): void {
+		$previous = $this->dependencies[$abstract] ?? null;
+		if ($dependency !== $previous) {
+			if (isset($this->instances[$abstract])) {
+				// todo: use typed exception ContainerException
+				throw new \RuntimeException("Unable to modify dependency for [$abstract] due to it's instance already created");
 			}
-
-			$this->dependencies[$abstract] = $dependency;
+			unset($this->canMake[$abstract]);
 		}
 
-		$this->isSingleton[$abstract] = true;
+		$this->dependencies[$abstract] = $dependency;
 	}
 
 	/**
@@ -71,6 +70,7 @@ class Container implements ContainerInterface {
 	protected function makePrimitive(\ReflectionParameter $parameter, string $className) {
 		if (!$parameter->isDefaultValueAvailable()) {
 			$parameterName = $parameter->getName();
+			// todo: use typed exception ContainerException
 			throw new \RuntimeException("Parameter '$parameterName' not resolved for class [$className]");
 		}
 		return $parameter->getDefaultValue();
@@ -103,13 +103,16 @@ class Container implements ContainerInterface {
 	public function build(string $className, array $params = []): object {
 		if (!class_exists($className)) {
 			if (interface_exists($className)) {
+				// todo: use typed exception ContainerException
 				throw new \RuntimeException("No dependency bound to [$className]");
 			}
+			// todo: use typed exception ContainerException
 			throw new \RuntimeException("Class [$className] not found");
 		}
 
 		$reflection = new \ReflectionClass($className);
 		if (!$reflection->isInstantiable()) {
+			// todo: use typed exception ContainerException
 			throw new \RuntimeException("Dependency [$className] is not instantiable");
 		}
 
@@ -125,6 +128,20 @@ class Container implements ContainerInterface {
 	}
 	
 	/**
+	 * @param array $array
+	 * @return bool
+	 */
+	protected function arrayIsList(array $array): bool {
+		foreach ($array as $key => $value) {
+			if (is_int($key)) {
+				return true;
+			}
+			break;
+		}
+		return false;
+	}
+	
+	/**
 	 * {@inheritdoc}
 	 */
 	public function make(string $abstract, array $params = []): object {
@@ -133,7 +150,8 @@ class Container implements ContainerInterface {
 		}
 		
 		if (array_key_exists($abstract, self::$queuedMake)) {
-			throw new \LogicException("Recursion while instantiating [$abstract] dependency. Try to use \$container->build() instead of make() inside of closure"); // todo: typed exception
+			// todo: use typed exception ContainerException
+			throw new \LogicException("Recursion while instantiating [$abstract] dependency. Try to use \$container->build() instead of make() inside of closure");
 		}
 
 		$dependency = $this->dependencies[$abstract] ?? $abstract;
@@ -141,7 +159,11 @@ class Container implements ContainerInterface {
 
 		if ($dependency instanceof \Closure) {
 			self::$queuedMake[$abstract] = true;
-			$instance = $dependency($this, ...$params);
+			if ($this->arrayIsList($params)) {
+				$instance = $dependency($this, ...$params);
+			} else {
+				$instance = $dependency($this, $params);
+			}
 			unset(self::$queuedMake[$abstract]);
 		} else if ($abstract === $dependency) {
 			$instance = $this->build($dependency, $params);
@@ -231,8 +253,8 @@ class Container implements ContainerInterface {
 		if (array_key_exists($property, $this->dependencies)) {
 			return $this->make($property);
 		}
-		// $className = static::class; // todo: warning
-		// logException(new \Exception("Undefined property '$property' for [$className]", E_NOTICE));
+		$className = static::class;
+		trigger_error("Undefined property '$property' for [$className]", E_USER_WARNING);
 		return null;
 	}
 

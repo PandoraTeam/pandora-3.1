@@ -27,6 +27,9 @@ class FilterDate {
 	 */
 	public function apply($value) {
 		if (!$value) {
+			return null;
+		}
+		if ($value instanceof \DateTimeInterface) {
 			return $value;
 		}
 		$date = \DateTime::createFromFormat($this->format, $value);

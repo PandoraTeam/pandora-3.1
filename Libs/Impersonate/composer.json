@@ -1,0 +1,22 @@
+{
+	"name": "pandora3/impersonate",
+	"description": "Pandora 3: Impersonate",
+	"homepage": "https://github.com/PandoraTeam/pandora3-Impersonate",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Petr Gostin",
+			"email": "nescafe238@gmail.com",
+			"homepage": "http://u-238.ru"
+		}
+	],
+	"require": {
+		"pandora3/contracts": "^1.0",
+		"pandora3/authentication": "^1.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"Pandora3\\Impersonate\\": "/"
+		}
+	}
+}

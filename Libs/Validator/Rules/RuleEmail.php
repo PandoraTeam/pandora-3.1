@@ -1,13 +1,14 @@
 <?php
 namespace Pandora3\Validator\Rules;
+use Pandora3\Validator\BaseRule;
 
 /**
  * Class RuleEmail
  * @package Pandora3\Validator\Rules
  */
-class RuleEmail {
+class RuleEmail extends BaseRule {
 
-	private const PATTERN_EMAIL = '/^[\w\._-]+@[\w\._-]+\.\w(?:[\w\.]*\w)?$/';
+	protected const PATTERN_EMAIL = '/^[\w\._-]+@[\w\._-]+\.\w(?:[\w\.]*\w)?$/';
 	
 	/** @var string */
 	public $message = 'Field "{:field}" should be a valid email address'; // 'Неверный формат поля "{:field}"'

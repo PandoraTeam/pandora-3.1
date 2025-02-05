@@ -13,7 +13,9 @@
 	"require": {
 		"pandora3/contracts": "^1.0",
 		"pandora3/env-parser": "^1.0",
-		"pandora3/http": "^1.0"
+		"pandora3/http": "^1.0",
+		"pandora3/registry": "^1.0",
+		"pandora3/events": "^1.0"
     },
 	"autoload": {
 		"psr-4": {

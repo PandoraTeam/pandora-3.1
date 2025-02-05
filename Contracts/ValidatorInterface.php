@@ -17,6 +17,11 @@ interface ValidatorInterface {
 	 * @return string
 	 */
 	function getFieldMessage(string $fieldName): string;
+	
+	/**
+	 * @param array $labels
+	 */
+	function setFieldLabels(array $labels): void;
 
 	/**
 	 * Validate values

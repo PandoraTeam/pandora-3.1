@@ -1,11 +1,12 @@
 <?php
 namespace Pandora3\Validator\Rules;
+use Pandora3\Validator\BaseRule;
 
 /**
  * Class RuleUnique
  * @package Pandora3\Validator\Rules
  */
-class RuleUnique {
+class RuleUnique extends BaseRule {
 
 	/** @var string */
 	public $message = 'Field "{:field}" must be unique';

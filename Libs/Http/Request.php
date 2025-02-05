@@ -93,7 +93,7 @@ class Request implements RequestInterface {
 				continue;
 			}
 			$key = str_replace('_', '-', $key);
-			$key = preg_replace_callback('#\w+(?:-|$)#', function($matches) {
+			$key = preg_replace_callback('#\w+(?:-|$)#', static function($matches) {
 				return ucfirst($matches[0]);
 			}, $key);
 			$headers[$key] = $value;
@@ -114,9 +114,14 @@ class Request implements RequestInterface {
 	 * @return static
 	 */
 	public static function create(UploadedFileFactoryInterface $fileFactory = null) {
+		// $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+		$uri = preg_replace('/(\?.*)?(#[\w\-]+)?$/', '', $_SERVER['REQUEST_URI'], 1);
+		if ($uri === false || is_null($uri)) {
+			\Logger::warning("Unable to parse REQUEST_URI", ['requestUri' => $_SERVER['REQUEST_URI']]); // todo: temp
+		}
 		return new static(
 			$_SERVER['REQUEST_METHOD'] ?: self::METHOD_GET,
-			parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), // new Uri(), // $_SERVER['REQUEST_URI'] ?? '/', $_SERVER['QUERY_STRING'] ?? ''
+			$uri, // new Uri(), // $_SERVER['REQUEST_URI'] ?? '/', $_SERVER['QUERY_STRING'] ?? ''
 			$_GET, $_POST, $_COOKIE, self::normalizeFiles($_FILES, $fileFactory), $_SERVER
 		);
 	}
@@ -128,17 +133,16 @@ class Request implements RequestInterface {
 	 */
 	protected static function normalizeFiles(array $files, UploadedFileFactoryInterface $fileFactory = null): array {
 		$files = self::collapseFiles($files);
-		$res = [];
-		self::createUploadedFiles($res, $files, $fileFactory);
-		return $res;
+		return self::createUploadedFiles($files, $fileFactory);
 	}
 	
 	/**
-	 * @param array $res
 	 * @param array $data
 	 * @param UploadedFileFactoryInterface|null $fileFactory
+	 * @return array
 	 */
-	protected static function createUploadedFiles(array &$res, array $data, UploadedFileFactoryInterface $fileFactory = null): void {
+	protected static function createUploadedFiles(array $data, UploadedFileFactoryInterface $fileFactory = null): array {
+		$res = [];
 		foreach ($data as $key => $file) {
 			if (
 				(isset($file['name']) && !is_array($file['name'])) ||
@@ -148,8 +152,9 @@ class Request implements RequestInterface {
 				$res[$key] = $fileFactory->createUploadedFile($file);
 				continue;
 			}
-			self::createUploadedFiles($res[$key], $file, $fileFactory);
+			$res[$key] = self::createUploadedFiles($file, $fileFactory);
 		}
+		return $res;
 	}
 
 	/**
@@ -178,6 +183,9 @@ class Request implements RequestInterface {
 			return;
 		}
 		foreach ($data as $key => $value) {
+			if (!isset($res[$key])) {
+				$res[$key] = [];
+			}
 			self::collapseFilesRecursive($res[$key], $value, $fileKey);
 		}
 	}
@@ -190,10 +198,18 @@ class Request implements RequestInterface {
 	}
 
 	/**
-	 * @return bool
+	 * {@inheritdoc}
 	 */
 	public function isPost(): bool {
 		return $this->method === self::METHOD_POST;
+	}
+	
+	/**
+	 * {@inheritdoc}
+	 */
+	public function isAjax(): bool {
+		$headerRequestedWith = $this->server['HTTP_X_REQUESTED_WITH'] ?? '';
+		return strtolower($headerRequestedWith) === 'xmlhttprequest';
 	}
 	
 	/**
@@ -205,10 +221,17 @@ class Request implements RequestInterface {
 	}
 
 	/**
-	 * @return string
+	 * {@inheritdoc}
 	 */
 	public function getUri(): string {
 		return $this->uri->getUri();
+	}
+	
+	/**
+	 * {@inheritdoc}
+	 */
+	public function getRefererUri(): ?string {
+		return $this->server['HTTP_REFERER'] ?? null;
 	}
 	
 	/* public function getUri(): string {

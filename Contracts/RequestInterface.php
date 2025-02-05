@@ -18,9 +18,19 @@ interface RequestInterface {
 	function getUri(): string;
 	
 	/**
+	 * @return string|null
+	 */
+	function getRefererUri(): ?string;
+	
+	/**
 	 * @return bool
 	 */
 	function isPost(): bool;
+	
+	/**
+	 * @return bool
+	 */
+	function isAjax(): bool;
 
 	/**
 	 * @param string $key
@@ -53,7 +63,7 @@ interface RequestInterface {
 	function getAttribute(string $key);
 
 	/**
-	 * @param null|string $method
+	 * @param string|null $method
 	 * @return array
 	 */
 	function all(?string $method = null): array;

@@ -9,8 +9,8 @@ interface UploadedFileFactoryInterface {
 	
 	/**
 	 * @param array $file
-	 * @return mixed
+	 * @return UploadedFileInterface|null
 	 */
-	function createUploadedFile(array $file);
+	function createUploadedFile(array $file): ?UploadedFileInterface;
 
 }

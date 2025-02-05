@@ -12,6 +12,6 @@ interface PolicyInterface {
 	 * @param string $action
 	 * @return bool|null
 	 */
-	public function before(AuthenticationUserInterface $user, string $action): ?bool;
+	function before(AuthenticationUserInterface $user, string $action): ?bool;
 
 }

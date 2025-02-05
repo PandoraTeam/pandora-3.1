@@ -31,7 +31,7 @@ class Storage implements StorageInterface {
 	 * @param array $config
 	 */
 	public static function use(ContainerInterface $container, array $config): void {
-		$container->singleton(StorageInterface::class, function() use ($config) {
+		$container->singleton(StorageInterface::class, static function() use ($config) {
 			return new Storage($config);
 		});
 	}
@@ -60,6 +60,23 @@ class Storage implements StorageInterface {
 			? rename($localPath, $targetPath)
 			: copy($localPath, $targetPath);
 	}
+	
+	/**
+	 * @param UploadedFileInterface|FileInterface $file
+	 * @param string $path
+	 * @return string
+	 */
+	public function uploadFile($file, string $path): string {
+        try {
+            $fileName = $this->uniqueFileName($file->getExtension(), $path);
+            if (!$this->upload($file, $path . '/' . $fileName)) {
+                throw new \Exception('Could not upload file');
+            }
+            return $fileName;
+        } catch (\Exception $ex) {
+            throw new \LogicException("Failed to move uploaded file '{$file->getPath()}'", E_ERROR, $ex);
+        }
+    }
 
 	/**
 	 * {@inheritdoc}
@@ -67,6 +84,23 @@ class Storage implements StorageInterface {
 	public function delete(string $path): bool {
 		return unlink($this->path . '/' . $path);
 	}
+	
+	/**
+	 * @param string $extension
+	 * @param string $path
+	 * @return string
+	 */
+    public function uniqueFileName(string $extension, string $path): string {
+    	try {
+			$path = $this->path.'/'.$path.'/';
+			do {
+				$fileName = bin2hex(random_bytes(8)).($extension ? '.'.$extension : '');
+			} while (file_exists($path.$fileName));
+			return $fileName;
+		} catch (\Exception $ex) {
+			throw new \LogicException("Failed to generate unique file name", E_ERROR, $ex);
+		}
+    }
 
 	/* public function isDirectory(string $path): bool {
 	} */

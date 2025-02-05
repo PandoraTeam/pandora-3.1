@@ -7,6 +7,7 @@ use DateTimeInterface;
 
 /**
  * Class Date
+ * Immutable date representation
  * @package Pandora3\Time
  *
  * @property-read int $year
@@ -76,13 +77,13 @@ class Date extends \DateTimeImmutable {
 	public static function getLocale(): string {
 		return self::$globalLocale;
 	}
-
+	
 	/**
 	 * @param string $format
 	 * @return string
 	 */
 	public function format($format) {
-		$format = self::translate($format, $this->locale);
+		$format = $this->translate($format, $this->locale);
 		return parent::format($format);
 	}
 
@@ -172,6 +173,14 @@ class Date extends \DateTimeImmutable {
 	 */
 	public function toDateTime(): DateTime {
 		return new DateTime($this);
+	}
+	
+	/**
+	 * @param DateTimeInterface $date
+	 * @return bool
+	 */
+	public function isEqualTo(DateTimeInterface $date): bool {
+		return $this->getTimestamp() === $date->getTimestamp();
 	}
 
 	/**

@@ -3,6 +3,7 @@ namespace Pandora3\Eloquent;
 
 use Pandora3\Time\Date;
 use Pandora3\Time\DateTime;
+use Pandora3\Time\Time;
 
 /**
  * Trait HasEloquentDateTime
@@ -10,6 +11,54 @@ use Pandora3\Time\DateTime;
  * @mixin \Illuminate\Database\Eloquent\Model
  */
 trait HasEloquentDateTime {
+	
+	/**
+	 * {@inheritdoc}
+	 */
+	protected function getCastType($key) {
+		if ($this->isTimeCast($this->getCasts()[$key])) {
+			return 'time';
+		}
+		
+		return parent::getCastType($key);
+	}
+	
+	/**
+	 * {@inheritdoc}
+	 */
+	protected function castAttribute($key, $value) {
+		if (is_null($value)) {
+			return $value;
+		}
+		
+		if ($this->getCastType($key) === 'time') {
+			return $this->asTime($value);
+		}
+		
+		return parent::castAttribute($key, $value);
+	}
+
+	/**
+	 * @param $cast
+	 * @return bool
+	 */
+	protected function isTimeCast($cast) {
+		return strncmp($cast, 'time:', 5) === 0;
+	}
+	
+	/**
+	 * @param mixed $value
+	 * @return Time|null
+	 */
+	protected function asTime($value): ?Time {
+		if (is_null($value)) {
+			return null;
+		}
+		if ($value instanceof \DateTimeInterface) {
+			return Time::createFromDateTime($value);
+		}
+		return Time::createFromFormat($value, Time::FormatMysql);
+	}
 	
 	/**
 	 * @param mixed $value
@@ -44,7 +93,7 @@ trait HasEloquentDateTime {
 			return parent::asDateTime($value);
 		} */
 		if (is_numeric($value)) {
-			return new DateTime($value);
+			return DateTime::createFromTimestamp($value);
 		}
 		if ($this->isStandardDateFormat($value)) {
 			return DateTime::createFromFormat(Date::FormatMysql, $value);

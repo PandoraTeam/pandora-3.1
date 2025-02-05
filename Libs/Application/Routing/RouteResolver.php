@@ -55,7 +55,7 @@ class RouteResolver implements RouteResolverInterface {
 		
 		$middlewares = array_merge($middlewares, $controller->middlewares());
 
-		return function($request, ...$arguments) use ($controller, $methodName) {
+		return static function($request, ...$arguments) use ($controller, $methodName) {
 			return $controller->handleAction($methodName, $request, ...$arguments);
 		};
 	}
@@ -70,7 +70,7 @@ class RouteResolver implements RouteResolverInterface {
 			if ($this->isMiddlewareGroup($middleware)) {
 				/** @var MiddlewareGroupInterface $middlewareGroup */
 				$middlewareGroup = $this->resolveInstance($middleware);
-				$result = array_merge($result, $middlewareGroup->getMiddlewares());
+				$result = array_merge($result, $middlewareGroup->getMiddlewares()); // todo: probably handle MiddlewareGroup-s inside MiddlewareGroup
 			} else {
 				$result[] = $middleware;
 			}
@@ -115,7 +115,7 @@ class RouteResolver implements RouteResolverInterface {
 		/** @var MiddlewareInterface[] $middlewares */
 		$middlewares = array_reverse($middlewares);
 		foreach ($middlewares as $middleware) {
-			$handler = function($request, ...$arguments) use ($middleware, $handler) {
+			$handler = static function($request, ...$arguments) use ($middleware, $handler) {
 				return $middleware->process($request, $handler, $arguments);
 			};
 		};

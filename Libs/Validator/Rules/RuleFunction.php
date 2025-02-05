@@ -1,15 +1,13 @@
 <?php
 namespace Pandora3\Validator\Rules;
+use Pandora3\Validator\BaseRule;
 
 /**
  * Class RuleFunction
  * @package Pandora3\Validator\Rules
  */
-class RuleFunction {
+class RuleFunction extends BaseRule {
 
-	/** @var string */
-	public $message = '';
-	
 	/** @var \Closure */
 	protected $callback;
 	
@@ -30,7 +28,7 @@ class RuleFunction {
 		$callback = $this->callback;
 		return $callback($value, function($message) {
 			$this->message = $message;
-		});
+		}, $values);
 	}
 
 }

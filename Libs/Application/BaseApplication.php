@@ -3,6 +3,7 @@ namespace Pandora3\Application;
 
 use Pandora3\Container\Container;
 use Pandora3\Contracts\ContainerInterface;
+use Pandora3\Registry\Registry;
 
 /**
  * Class BaseApplication
@@ -19,8 +20,8 @@ abstract class BaseApplication {
 	/** @var array */
 	protected $env = [];
 
-	/** @var array */
-	protected $config = [];
+	/** @var Registry */
+	protected $config;
 
 	/** @var ContainerInterface */
 	protected $container;
@@ -36,18 +37,35 @@ abstract class BaseApplication {
 			self::$instance = $this;
 		}
 
-		$this->env = DotEnv::load(ROOT.'/.env', ROOT.'/storage/cache/.env.cache.php');
+		$this->env = DotEnv::load(ROOT.'/.env', ROOT.'/storage/cache/.env.cache.php'); // todo: avoid hardcoded storage path
 		$this->environment = $this->getEnv('APP_ENV', self::ENV_DEVELOPMENT);
 
-		$this->config = $this->loadConfig(ROOT.'/config/config.php');
+		$this->beforeInitConfig();
+		$this->config = new Registry($this->loadConfig($this->getConfigPath()));
 
 		$this->container = $this->createContainer();
 		$this->dependencies($this->container);
 		try {
 			$this->init();
 		} catch (\Throwable $error) {
-			$this->handleError($error);
+			$this->handleException($error);
 		}
+	}
+	
+	/**
+	 * @return string
+	 */
+	protected function getConfigPath(): string {
+		return ROOT.'/config/config.php';
+	}
+	
+	/**
+	 * @return array
+	 */
+	public function __debugInfo() {
+		$result = get_object_vars($this);
+		$result['config'] = ['***']; // protect config values when dumping
+		return $result;
 	}
 
 	/**
@@ -74,9 +92,14 @@ abstract class BaseApplication {
 	protected function dependencies(ContainerInterface $container): void { }
 
 	/**
-	 * Initialize application
+	 * Initialize application hook
 	 */
 	protected function init(): void { }
+	
+	/**
+	 * Before init config hook
+	 */
+	protected function beforeInitConfig(): void { }
 
 	/**
 	 * Run application
@@ -84,11 +107,11 @@ abstract class BaseApplication {
 	abstract public function run(): void;
 	
 	/**
-	 * @param \Throwable $error
+	 * @param \Throwable $exception
 	 * @throws \RuntimeException
 	 */
-	protected function handleError(\Throwable $error): void {
-		throw new \RuntimeException("Application error", E_ERROR, $error);
+	protected function handleException(\Throwable $exception): void {
+		throw new \RuntimeException("Application error", E_ERROR, $exception);
 	}
 
 
@@ -121,8 +144,7 @@ abstract class BaseApplication {
 	 * @return mixed|null
 	 */
 	public function getConfig(string $key, $default = null) {
-		// todo: nested key access by ".", use Registry
-		return $this->config[$key] ?? $default;
+		return $this->config->get($key, $default);
 	}
 
 }

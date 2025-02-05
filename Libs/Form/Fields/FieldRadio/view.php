@@ -12,7 +12,7 @@
  */
 // $disabled = $disabled ?? false;
 
-$renderOptions = function($options) use ($value, $name, $rawLabels, $inputHtmlAttribs) {
+$renderOptions = static function($options) use ($value, $name, $rawLabels, $inputHtmlAttribs) {
 	foreach ($options as $optionValue => $params) {
 		if (is_scalar($params)) {
 			$params = ['title' => $params];

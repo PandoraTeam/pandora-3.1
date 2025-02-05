@@ -41,5 +41,16 @@ class FieldSelect extends FormField {
 			!array_key_exists('title', $firstValue)
 		);
 	}
+	
+	/**
+	 * {@inheritdoc}
+	 */
+	protected function getFieldHtmlAttribs(): array {
+		$fieldAttribs = $this->params['fieldAttribs'] ?? [];
+		$isDisabled = $this->params['disabled'] ?? false;
+		$fieldClass = $fieldAttribs['class'] ?? '';
+		$fieldAttribs['class'] = 'field ' . $fieldClass . ($isDisabled ? ' disabled' : '');
+		return $fieldAttribs;
+	}
 
 }
