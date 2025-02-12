@@ -3,6 +3,7 @@ namespace Pandora3\Mailer;
 
 use Pandora3\Contracts\ContainerInterface;
 use Pandora3\Contracts\LoggerInterface;
+use Pandora3\Mailer\Drivers\Mail;
 use Pandora3\Mailer\Drivers\SMTP;
 use Pandora3\Mailer\Exceptions\SendEmailFailedException;
 use Pandora3\Mailer\Interfaces\MailTransportInterface;
@@ -44,14 +45,17 @@ class Mailer {
 		$container->singleton(Mailer::class, static function(ContainerInterface $container) use ($defaultDriver) {
 			return $container->build(Mailer::class, ['defaultDriver' => $defaultDriver]);
 		});
+		$container->singleton(Mail::class, static function() use ($config) {
+			return new Mail($config['mail'] ?? []);
+		});
 		$container->singleton(SMTP::class, static function() use ($config) {
-			$smtp = $config['smtp'] ?? null;
-			if (!$smtp) {
+			$options = $config['smtp'] ?? null;
+			if (!$options) {
 				throw new \RuntimeException("Mailer config 'smtp' params not set");
 			}
-			$host = $smtp['host'] ?? null;
-			$username = $smtp['username'] ?? null;
-			$password = $smtp['password'] ?? null;
+			$host = $options['host'] ?? null;
+			$username = $options['username'] ?? null;
+			$password = $options['password'] ?? null;
 			if (!$host) {
 				throw new \RuntimeException("Mailer SMTP config 'host' is not set");
 			}
@@ -61,7 +65,7 @@ class Mailer {
 			if (!$password) {
 				throw new \RuntimeException("Mailer SMTP config 'password' is not set");
 			}
-			return new SMTP($host, $username, $password, $smtp);
+			return new SMTP($host, $username, $password, $options);
 		});
 	}
 
@@ -73,6 +77,8 @@ class Mailer {
 		$driver = $driver ?? $this->defaultDriver;
 		if ($driver === 'smtp') {
 			$className = SMTP::class;
+		} else if ($driver === 'mail') {
+			$className = Mail::class;
 		} else {
 			throw new \RuntimeException("Mailer unsupported driver '{$driver}'");
 		}
@@ -86,12 +92,21 @@ class Mailer {
 	 */
 	public function send(Email $email, ?string $driver = null) {
 		$transport = $this->getTransport($driver);
-		$transport->send($email);
-		$message = $transport->getSentMIMEMessage();
-		$this->logger->info("Email message sent\n".$message, [
-			'email' => $email,
-			'transport' => get_class($transport)
-		], self::LogChannel);
+		try {
+			$transport->send($email);
+			$message = $transport->getSentMIMEMessage();
+			$this->logger->info("Email message sent\n".$message, [
+				'email' => $email,
+				'transport' => get_class($transport)
+			], self::LogChannel);
+		} catch (SendEmailFailedException $ex) {
+			$message = $transport->getSentMIMEMessage();
+			$this->logger->log('error', "Failed to send email message\n".$message, [
+				'email' => $email,
+				'transport' => get_class($transport)
+			], self::LogChannel);
+			throw $ex;
+		}
 	}
 
 }
