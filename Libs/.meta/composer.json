@@ -23,11 +23,12 @@
 		"pandora3/controller": "^1.0",
 		"pandora3/cookie": "^1.0",
 		"pandora3/env-parser": "^1.0",
+		"pandora3/events": "^1.0",
 		"pandora3/file": "^1.0",
 		"pandora3/http": "^1.0",
-		"pandora3/router": "^1.0",
-		"pandora3/session": "^1.0",
 		"pandora3/logger": "^1.0",
-		"pandora3/registry": "^1.0"
+		"pandora3/registry": "^1.0",
+		"pandora3/router": "^1.0",
+		"pandora3/session": "^1.0"
     }
 }
