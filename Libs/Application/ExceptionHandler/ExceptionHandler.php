@@ -127,7 +127,7 @@ class ExceptionHandler {
 		}
 
 		if ($file) {
-			$file = str_replace('/var/www/uc7f1da0a/data/www/contracts.u-238.ru', '', $file); // todo: temporary
+			$file = str_replace(ROOT, '', $file);
 		}
 
 		$context = [
@@ -162,6 +162,7 @@ class ExceptionHandler {
 		return [
 			'signature' => [
 				'uri' => $_SERVER['REQUEST_URI'] ?? null,
+				'method' => $_SERVER['REQUEST_METHOD'] ?? null,
 				'userAgent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
 				'ip' => $_SERVER['REMOTE_ADDR'] ?? null,
 				'userId' => $this->authentication->getUserId(), // $_SESSION['authenticationUserId'] ?? null,
