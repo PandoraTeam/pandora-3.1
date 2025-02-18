@@ -52,11 +52,11 @@ class RequestAnalyzerMiddleware implements MiddlewareInterface {
 			) {
 				$advancedCheck = true;
 			}
-			if (preg_match_all('#system\.ini|\#exec|%3Cscript|<script|\bonerror|php://|convert\.base64-encode|%3Cimg|<img|information_schema|var/www|var/log|src/pandora3|java\.lang|utl_inaddr|get_host_name|pg_sleep|randomblob#i', $value, $matches)) {
+			if (preg_match_all('#system\.ini|\#exec|%3Cscript|<script|\bonerror\bonfocus|php://|convert\.base64-encode|data:text/|%3Cimg|<img|information_schema|var/www|var/log|src/pandora3|java\.lang|utl_inaddr|get_host_name|pg_sleep|randomblob#i', $value, $matches)) {
 				$suspicious += count($matches[0]) * 10;
 				$advancedCheck = true;
 			}
-			if (!$advancedCheck && preg_match('#\bpasswd|\bunion|\bfrom|\bselect|\bwaitfor|\bdelay|\bcase\s+when|javascript:|;url|\.php|google\.com#i', $value)) {
+			if (!$advancedCheck && preg_match('#\bpasswd|\bunion|\bfrom|\bselect|\bwaitfor|\bdelay|\bcase\s+when|javascript:|;base64|;url|\.php|google\.com#i', $value)) {
 				$advancedCheck = true;
 			}
 			if ($advancedCheck) {
