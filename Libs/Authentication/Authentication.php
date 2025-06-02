@@ -32,16 +32,32 @@ class Authentication {
 	/** @var int|null */
 	protected $userId;
 	
-	public function __construct(SessionInterface $session, UserProviderInterface $userProvider) {
+	/** @var ThrottleLogins */
+	protected $throttleLogins;
+	
+	/**
+	 * Authentication constructor
+	 * @param SessionInterface $session
+	 * @param UserProviderInterface $userProvider
+	 * @param ThrottleLogins $throttleLogins
+	 */
+	public function __construct(SessionInterface $session, UserProviderInterface $userProvider, ThrottleLogins $throttleLogins) {
 		$this->session = $session;
 		$this->userProvider = $userProvider;
+		$this->throttleLogins = $throttleLogins;
 	}
 
 	/**
 	 * @param ContainerInterface $container
+	 * @param string $loginAttemptsClassName
+	 * @param array $config
 	 */
-	public static function use(ContainerInterface $container): void {
+	public static function use(ContainerInterface $container, array $config = [], string $loginAttemptsClassName = ''): void {
+		$throttleConfig = $config['throttle'] ?? [];
 		$container->singleton(Authentication::class);
+		$container->singleton(ThrottleLogins::class, static function() use ($loginAttemptsClassName, $throttleConfig) {
+			return new ThrottleLogins($throttleConfig, $loginAttemptsClassName);
+		});
 	}
 
 	/**
@@ -65,11 +81,16 @@ class Authentication {
 	/**
 	 * @param string $login
 	 * @param string $password
+	 * @param string|null $throttleKey
 	 * @return AuthenticationUserInterface|null
 	 * @throws AuthUserNotFoundException
 	 * @throws AuthWrongPasswordException
 	 */
-	public function authenticate(string $login, string $password): ?AuthenticationUserInterface {
+	public function authenticate(string $login, string $password, ?string $throttleKey = null): ?AuthenticationUserInterface {
+		if ($throttleKey) {
+			$this->throttleLogins->incrementAttempts($throttleKey);
+		}
+		
 		$user = $this->userProvider->getUserByLogin($login);
 		if (!$user) {
 			throw new AuthUserNotFoundException($login);
@@ -78,6 +99,10 @@ class Authentication {
 			throw new AuthWrongPasswordException();
 		}
 		$this->authenticateUser($user);
+		
+		if ($throttleKey) {
+			$this->throttleLogins->clearAttempts($throttleKey);
+		}
 		return $user;
 	}
 

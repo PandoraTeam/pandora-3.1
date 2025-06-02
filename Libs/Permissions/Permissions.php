@@ -16,12 +16,21 @@ class Permissions {
 	/** @var array */
 	protected static $policies = [];
 	
+	public const GLOBAL_POLICY = ':GLOBAL';
+	
 	/**
 	 * @param string $modelClass
 	 * @param string $policyClass
 	 */
 	public static function registerPolicy(string $modelClass, string $policyClass): void {
 		self::$policyTypes[$modelClass] = $policyClass;
+	}
+	
+	/**
+	 * @param string $policyClass
+	 */
+	public static function registerGlobalPolicy(string $policyClass): void {
+		self::$policyTypes[self::GLOBAL_POLICY] = $policyClass;
 	}
 
 	/**
@@ -52,12 +61,20 @@ class Permissions {
 	/**
 	 * @param AuthenticationUserInterface $user
 	 * @param string $action
-	 * @param mixed $object
+	 * @param mixed|null $object
 	 * @return bool
 	 */
-	public function can(AuthenticationUserInterface $user, string $action, $object): bool {
-		$isModel = !is_string($object);
-		$className = $isModel ? get_class($object) : $object;
+	public function can(AuthenticationUserInterface $user, string $action, $object = null): bool {
+		if (substr($action, 0, 7) === 'global:') {
+			$className = self::GLOBAL_POLICY;
+			$action = substr($action, 7);
+		} else {
+			if (is_null($object)) {
+				throw new \LogicException("Permissions::can 'object' argument is required");
+			}
+			$isModel = !is_string($object);
+			$className = $isModel ? get_class($object) : $object;
+		}
 		
 		$policy = self::getPolicy($className);
 		if (!method_exists($policy, $action)) {

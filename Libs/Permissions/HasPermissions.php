@@ -12,10 +12,10 @@ trait HasPermissions {
 
 	/**
 	 * @param string $action
-	 * @param mixed $object
+	 * @param mixed|null $object
 	 * @return bool
 	 */
-	public function can(string $action, $object): bool {
+	public function can(string $action, $object = null): bool {
 		return \Gate::permissions()->can($this, $action, $object);
 	}
 

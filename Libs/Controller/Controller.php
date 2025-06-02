@@ -27,7 +27,7 @@ abstract class Controller implements ControllerInterface {
 	protected $redirector;
 
 	/** @var string */
-	protected $layout = 'Main';
+	protected $layout = 'Main'; // todo: Main.twig ?
 
 	/** @var string */
 	protected $_name;

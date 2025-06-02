@@ -31,7 +31,9 @@ class DotEnv {
 		}
 
 		file_put_contents($cacheFile . '.tmp', self::generateCache($env), LOCK_EX);
-		unlink($cacheFile);
+		if (is_file($cacheFile)) {
+			unlink($cacheFile);
+		}
 		rename($cacheFile . '.tmp', $cacheFile);
 
 		return $env;
